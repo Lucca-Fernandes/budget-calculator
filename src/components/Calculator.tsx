@@ -84,12 +84,15 @@ const Calculator: React.FC = () => {
     }
   };
 
-  // Função para formatar números no padrão brasileiro (ex.: 7500000.00 -> 7.500.000,00)
+  // Função para formatar números inteiros no padrão brasileiro (ex.: 7500000 -> 7.500.000)
+  const formatInteger = (value: number): string => {
+    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
+  // Função para formatar números monetários no padrão brasileiro (ex.: 7500000.00 -> 7.500.000,00)
   const formatNumber = (value: number): string => {
     const [integerPart, decimalPart] = value.toFixed(2).split('.');
-    // Adiciona pontos como separadores de milhar
     const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    // Substitui o ponto decimal por vírgula
     return `${formattedInteger},${decimalPart}`;
   };
 
@@ -238,12 +241,12 @@ const Calculator: React.FC = () => {
             <Typography variant="h3">Resultados</Typography>
             {!usePredefinedBudget && (
               <Typography variant="body1">
-                Público (0,5% dos habitantes): {formatNumber(publicCount)}
+                Público (0,5% dos habitantes): {formatInteger(publicCount)}
               </Typography>
             )}
             {usePredefinedBudget && (
               <Typography variant="body1">
-                Quantidade de Alunos Possíveis: {possibleStudents}
+                Quantidade de Alunos Possíveis: {formatInteger(possibleStudents)}
               </Typography>
             )}
             <Typography variant="body1">
