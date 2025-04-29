@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import {
   Box,
@@ -56,6 +56,7 @@ const Calculator: React.FC = () => {
   const [currentDate, setCurrentDate] = useState<string>('2025-04-28'); // Data atual como padrão
   const [usePredefinedBudget, setUsePredefinedBudget] = useState<boolean>(false); // Estado do switch
   const [predefinedBudget, setPredefinedBudget] = useState<number>(0); // Orçamento pré-definido
+  const [isStudentsManuallyEdited, setIsStudentsManuallyEdited] = useState<boolean>(false); // Nova flag
 
   // Função para validar e atualizar a quantidade de habitantes
   const handleHabitantsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,12 +67,15 @@ const Calculator: React.FC = () => {
     }
   };
 
+
+  
   // Função para validar e atualizar a quantidade de alunos
   const handleStudentsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Permite apenas números inteiros positivos
     if (/^\d*$/.test(value)) {
       setStudents(Number(value));
+      setIsStudentsManuallyEdited(true); // Marca como editado manualmente
     }
   };
 
@@ -96,8 +100,24 @@ const Calculator: React.FC = () => {
     return `${formattedInteger},${decimalPart}`;
   };
 
-  // Cálculo do público e custo total com base no modo (orçamento pré-definido ou habitantes)
+  // Cálculo do público
   const publicCount = usePredefinedBudget ? 0 : habitants * 0.005; // Não calculamos público se usarmos orçamento pré-definido
+
+  // Sincronizar students com publicCount, mas apenas se não foi editado manualmente
+  useEffect(() => {
+    if (!usePredefinedBudget && !isStudentsManuallyEdited) {
+      setStudents(Math.floor(publicCount)); // Arredonda para baixo para garantir número inteiro
+    }
+  }, [publicCount, usePredefinedBudget, isStudentsManuallyEdited]);
+
+  // Resetar a flag de edição manual quando usePredefinedBudget muda
+  useEffect(() => {
+    if (usePredefinedBudget) {
+      setIsStudentsManuallyEdited(false); // Reseta a flag
+      setStudents(0); // Reseta students quando orçamento pré-definido é ativado
+    }
+  }, [usePredefinedBudget]);
+
   const baseCostPerStudent = 30000;
   const totalCost = usePredefinedBudget ? predefinedBudget : students * baseCostPerStudent;
 
@@ -226,7 +246,7 @@ const Calculator: React.FC = () => {
             label="Quantidade de Alunos"
             type="text"
             inputProps={{ inputMode: 'numeric' }}
-            value={students}
+            value={students} // Controlado por students, não por publicCount
             onChange={handleStudentsChange}
             placeholder="Digite um número"
             fullWidth
