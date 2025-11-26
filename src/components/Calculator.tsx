@@ -126,7 +126,7 @@ const Calculator: React.FC = () => {
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 6, mb: 6, }}>
         <TextField
-          label="Data de Início"
+          label="Data da Assinatura"
           type="date"
           value={currentDate}
           onChange={(e) => setCurrentDate(e.target.value)}
