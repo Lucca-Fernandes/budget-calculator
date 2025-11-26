@@ -164,11 +164,11 @@ const Calculator: React.FC = () => {
 
 
           <Typography variant="body1" sx={{ fontSize: '1.4rem', mb: 1, fontFamily: FONT_FAMILY, }}>
-            1º Entrada (10%): <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(entryFee)}</span>
+            10% - 30 dias após assinatura do contrato: <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(entryFee)}</span>
           </Typography>
 
           <Typography variant="body1" sx={{ fontSize: '1.4rem', mb: 3, fontFamily: FONT_FAMILY, ml: 0.3 }}>
-            2º Entrada (10%): <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(deliveryFee)}</span>
+            10% - 60 dias após assinatura do contrato: <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(deliveryFee)}</span>
           </Typography>
 
           {yearlyPayments.length > 0 ? (
@@ -202,7 +202,7 @@ const Calculator: React.FC = () => {
           <Divider sx={{ my: 3 }} />
 
           <Typography variant="body1" sx={{ fontSize: '1.4rem', mb: 1, fontFamily: FONT_FAMILY }}>
-            investimento total: <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(totalCost)}</span>
+            Investimento total: <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(totalCost)}</span>
           </Typography>
         </Paper>
       </Box>
