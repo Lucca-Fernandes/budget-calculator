@@ -1,317 +1,213 @@
-import React, { useState, useEffect } from 'react';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import React, { useState } from 'react';
 import {
-  Box,
-  TextField,
-  Typography,
-  Paper,
-  Container,
-  Switch,
-  FormControlLabel,
+  Box,
+  TextField,
+  Typography,
+  Container,
+  Paper,
+  Divider,
 } from '@mui/material';
 
-// Importar a logo
 import logo from '../assets/logo.png';
 
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    background: {
-      default: '#f5f5f5',
-    },
-  },
-  typography: {
-    h1: {
-      fontSize: '2.2rem',
-      fontWeight: 600,
-      marginBottom: '1rem',
-    },
-    h2: {
-      fontSize: '1.8rem',
-      fontWeight: 500,
-      marginTop: '1.5rem',
-      marginBottom: '1rem',
-    },
-    h3: {
-      fontSize: '1.5rem',
-      fontWeight: 500,
-      marginTop: '1rem',
-      marginBottom: '0.5rem',
-    },
-    h4: {
-      fontSize: '1.2rem',
-      fontWeight: 500,
-      marginTop: '1rem',
-      marginBottom: '0.5rem',
-    },
-  },
-});
+
+const FONT_FAMILY = 'Conthrax, Arial, sans-serif';
+
+const getFormattedCurrentDate = (): string => {
+  const now = new Date();
+  
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
+};
 
 const Calculator: React.FC = () => {
-  // Estados para os inputs
-  const [habitants, setHabitants] = useState<number>(0);
-  const [students, setStudents] = useState<number>(0);
-  const [currentDate, setCurrentDate] = useState<string>('2025-04-28'); // Data atual como padrão
-  const [usePredefinedBudget, setUsePredefinedBudget] = useState<boolean>(false); // Estado do switch
-  const [predefinedBudget, setPredefinedBudget] = useState<number>(0); // Orçamento pré-definido
-  const [isStudentsManuallyEdited, setIsStudentsManuallyEdited] = useState<boolean>(false); // Nova flag
+  const [students, setStudents] = useState<number>(150);
+  const [currentDate, setCurrentDate] = useState<string>(getFormattedCurrentDate()); 
 
-  // Função para validar e atualizar a quantidade de habitantes
-  const handleHabitantsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Permite apenas números inteiros positivos
-    if (/^\d*$/.test(value)) {
-      setHabitants(Number(value));
-    }
-  };
+  const handleStudentsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (/^\d*$/.test(value)) {
+      setStudents(Number(value));
+    }
+  };
 
 
-  
-  // Função para validar e atualizar a quantidade de alunos
-  const handleStudentsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Permite apenas números inteiros positivos
-    if (/^\d*$/.test(value)) {
-      setStudents(Number(value));
-      setIsStudentsManuallyEdited(true); // Marca como editado manualmente
-    }
-  };
+  const formatNumber = (value: number): string => {
+    const [integerPart, decimalPart] = value.toFixed(2).split('.');
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return `${formattedInteger},${decimalPart}`;
+  };
 
-  // Função para validar e atualizar o orçamento pré-definido
-  const handlePredefinedBudgetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Permite apenas números inteiros positivos
-    if (/^\d*$/.test(value)) {
-      setPredefinedBudget(Number(value));
-    }
-  };
+  const baseCostPerStudent = 31500;
+  const totalCost = students * baseCostPerStudent;
 
-  // Função para formatar números inteiros no padrão brasileiro (ex.: 7500000 -> 7.500.000)
-  const formatInteger = (value: number): string => {
-    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  };
+  const entryFee = totalCost * 0.1;
+  const deliveryFee = totalCost * 0.1;
+  const remainingCost = totalCost - entryFee - deliveryFee;
 
-  // Função para formatar números monetários no padrão brasileiro (ex.: 7500000.00 -> 7.500.000,00)
-  const formatNumber = (value: number): string => {
-    const [integerPart, decimalPart] = value.toFixed(2).split('.');
-    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    return `${formattedInteger},${decimalPart}`;
-  };
+  const selectedDate = new Date(currentDate);
+  const selectedYear = selectedDate.getFullYear();
+  const selectedMonth = selectedDate.getMonth();
 
-  // Cálculo do público
-  const publicCount = usePredefinedBudget ? 0 : habitants * 0.005; // Não calculamos público se usarmos orçamento pré-definido
+  const totalMonthlyParcels = 24;
 
-  // Sincronizar students com publicCount, mas apenas se não foi editado manualmente
-  useEffect(() => {
-    if (!usePredefinedBudget && !isStudentsManuallyEdited) {
-      setStudents(Math.floor(publicCount)); // Arredonda para baixo para garantir número inteiro
-    }
-  }, [publicCount, usePredefinedBudget, isStudentsManuallyEdited]);
+  const endDate = new Date(selectedDate);
+  endDate.setMonth(selectedDate.getMonth() + totalMonthlyParcels);
 
-  // Resetar a flag de edição manual quando usePredefinedBudget muda
-  useEffect(() => {
-    if (usePredefinedBudget) {
-      setIsStudentsManuallyEdited(false); // Reseta a flag
-      setStudents(0); // Reseta students quando orçamento pré-definido é ativado
-    }
-  }, [usePredefinedBudget]);
+  const endYear = endDate.getFullYear();
+  const endMonth = endDate.getMonth();
 
-  const baseCostPerStudent = 30000;
-  const totalCost = usePredefinedBudget ? predefinedBudget : students * baseCostPerStudent;
+  const monthlyPayment = remainingCost / totalMonthlyParcels;
 
-  // Calcular a quantidade de alunos possíveis com base no orçamento pré-definido
-  const possibleStudents = usePredefinedBudget ? Math.floor(predefinedBudget / baseCostPerStudent) : 0;
+  const yearlyPayments: { year: number; months: number; total: number }[] = [];
+  let totalMonthsCounted = 0;
 
-  // Cálculo do orçamento
-  const entryFee = totalCost * 0.1; // 10% de entrada
-  const deliveryFee = totalCost * 0.1; // 10% na entrega
-  const remainingCost = totalCost - entryFee - deliveryFee; // Valor restante
+  for (let year = selectedYear; year <= endYear; year++) {
+    let monthsInYear = 0;
 
-  // Cálculo das parcelas com base na data
-  const selectedDate = new Date(currentDate);
-  const selectedYear = selectedDate.getFullYear();
-  const selectedMonth = selectedDate.getMonth(); // 0 a 11 (janeiro é 0)
+    if (year === selectedYear) {
+      monthsInYear = 12 - (selectedMonth + 1);
+    } else if (year === endYear) {
+      monthsInYear = endMonth + 1;
+    } else {
+      monthsInYear = 12;
+    }
 
-  // Total de parcelas mensais (excluindo entrada e entrega)
-  const totalMonthlyParcels = 24; // 26 parcelas totais - 1 entrada - 1 entrega = 24 parcelas mensais
+    if (totalMonthsCounted + monthsInYear > totalMonthlyParcels) {
+      monthsInYear = totalMonthlyParcels - totalMonthsCounted;
+    }
 
-  // Calcular a data final (adicionar 24 meses à data inicial)
-  const endDate = new Date(selectedDate);
-  endDate.setMonth(selectedDate.getMonth() + totalMonthlyParcels);
-  const endYear = endDate.getFullYear();
-  const endMonth = endDate.getMonth(); // 0 a 11
+    if (monthsInYear > 0) {
+      const totalForYear = monthlyPayment * monthsInYear;
+      yearlyPayments.push({ year, months: monthsInYear, total: totalForYear });
+      totalMonthsCounted += monthsInYear;
+    }
 
-  // Calcular o valor da parcela mensal
-  const monthlyPayment = remainingCost / totalMonthlyParcels;
+    if (totalMonthsCounted >= totalMonthlyParcels) break;
+  }
 
-  // Calcular os totais por ano entre o ano inicial e o ano final
-  const yearlyPayments: { year: number; months: number; total: number }[] = [];
+  return (
+    <Container maxWidth="lg" sx={{ py: 5, minHeight: '100vh' }}>
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          mb: 6,
+          '& img': { // Aplica estilos à tag img dentro deste Box
+            width: '450px', 
+            height: '100px',
+            
+            // ALTERNATIVA: Reduz o tamanho da logo para mobile (max-width: 600px)
+            ['@media (max-width:600px)']: { 
+              width: '250px', 
+              height: 'auto', 
+            },
+          }
+        }}
+      >
+        <img
+          src={logo}
+          alt="Logo Calculadora"
+          // Estilos inline e sx removidos daqui, pois estão no Box pai
+        />
+      </Box>
 
-  // Iterar pelos anos entre selectedYear e endYear
-  for (let year = selectedYear; year <= endYear; year++) {
-    let monthsInYear = 0;
+      <Typography
+        variant="h1"
+        align="center"
+        color="black"
+        sx={{ fontSize: '2.7rem', fontFamily: FONT_FAMILY }}
+      >
+        Calculadora de Orçamento
+      </Typography>
 
-    if (year === selectedYear) {
-      // Primeiro ano: meses restantes a partir do mês inicial
-      monthsInYear = 12 - (selectedMonth + 1);
-    } else if (year === endYear) {
-      // Último ano: meses até o mês final
-      monthsInYear = endMonth + 1;
-    } else {
-      // Anos intermediários: 12 meses
-      monthsInYear = 12;
-    }
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 6, mb: 6, }}>
+        <TextField
+          label="Data de Início"
+          type="date"
+          value={currentDate}
+          onChange={(e) => setCurrentDate(e.target.value)}
+          InputLabelProps={{ shrink: true, sx: { fontSize: '1.2rem', fontFamily: FONT_FAMILY, } }}
+          inputProps={{ sx: { fontSize: '1.4rem', fontFamily: FONT_FAMILY, m: 0.5 } }}
+          fullWidth
+          variant="outlined"
+        />
 
-    // Ajustar para não exceder o total de 24 parcelas
-    const totalMonthsSoFar = yearlyPayments.reduce((sum, payment) => sum + payment.months, 0);
-    if (totalMonthsSoFar + monthsInYear > totalMonthlyParcels) {
-      monthsInYear = totalMonthlyParcels - totalMonthsSoFar;
-    }
+        <TextField
+          label="Quantidade de Alunos"
+          type="text"
+          placeholder="Digite um número"
+          value={students}
+          onChange={handleStudentsChange}
+          InputLabelProps={{ shrink: true, sx: { fontSize: '1.2rem', fontFamily: FONT_FAMILY, } }}
+          inputProps={{
+            inputMode: 'numeric',
+            sx: { fontSize: '1.5rem', fontFamily: FONT_FAMILY, m: 0.5 }
+          }}
+          fullWidth
+          variant="outlined"
+        />
+      </Box>
 
-    if (monthsInYear > 0) {
-      const totalForYear = monthlyPayment * monthsInYear;
-      yearlyPayments.push({ year, months: monthsInYear, total: totalForYear });
-    }
-  }
+      <Box sx={{ mt: 6 }}>
+        <Paper elevation={3} sx={{ p: 5 }}>
 
-  return (
-    <ThemeProvider theme={theme}>
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        {/* Logo acima do título */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-          <img
-            src={logo}
-            alt="Logo Calculadora"
-            style={{ width: '250px', height: '50px' }}
-          />
-        </Box>
+          <Typography
+            variant="h3"
+            sx={{ mb: 5, fontSize: '2.5rem', fontFamily: FONT_FAMILY, fontWeight: 700 }}
+          >
+            Orçamento
+          </Typography>
 
-        <Typography variant="h1" align="center" color="black">
-          Calculadora de Orçamento
-        </Typography>
 
-        {/* Switch para "Orçamento pré-definido" no canto superior direito */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={usePredefinedBudget}
-                onChange={(e) => setUsePredefinedBudget(e.target.checked)}
-                color="secondary"
-              />
-            }
-            label="Orçamento pré-definido"
-          />
-        </Box>
+          <Typography variant="body1" sx={{ fontSize: '1.4rem', mb: 1, fontFamily: FONT_FAMILY, }}>
+            1º Entrada (10%): <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(entryFee)}</span>
+          </Typography>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 3 }}>
-          {/* Input para a data atual */}
-          <TextField
-            label="Data Atual"
-            type="date"
-            value={currentDate}
-            onChange={(e) => setCurrentDate(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-          />
+          <Typography variant="body1" sx={{ fontSize: '1.4rem', mb: 3, fontFamily: FONT_FAMILY, ml: 0.3 }}>
+            2º Entrada (10%): <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(deliveryFee)}</span>
+          </Typography>
 
-          {/* Input para quantidade de habitantes (desabilitado se usar orçamento pré-definido) */}
-          <TextField
-            label="Quantidade de Habitantes"
-            type="text"
-            inputProps={{ inputMode: 'numeric' }}
-            value={habitants}
-            onChange={handleHabitantsChange}
-            placeholder="Digite um número"
-            fullWidth
-            disabled={usePredefinedBudget}
-          />
+          {yearlyPayments.length > 0 ? (
+            <Box sx={{
+              mb: 3,
+              border: '5px solid #1976d2', 
+              px: 3, 
+              py: 2, 
+              bgcolor: 'background.default',
+              borderRadius: '8px',
+            }}>                
+            <Typography
+                    variant="body1"
+                    sx={{ fontWeight: 'bold', fontSize: '1.8rem', fontFamily: FONT_FAMILY, color: 'primary.main' }} 
+                >
+                    {totalMonthlyParcels}x <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(monthlyPayment)}</span>
+                </Typography>
+              {/* Detalhamento das Parcelas Anuais */}
+              {yearlyPayments.map((payment) => (
+                <Typography key={payment.year} variant="body1" sx={{ fontSize: '1.1rem', fontFamily: FONT_FAMILY, mt: 0.5 }}>
+                  Total em {payment.year} ({payment.months} meses): <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(payment.total)}</span>
+                </Typography>
+              ))}
+            </Box>
+          ) : (
+            <Typography variant="body1" sx={{ fontSize: '1.4rem', mb: 3, fontFamily: FONT_FAMILY }}>
+              Nenhuma parcela disponível.
+            </Typography>
+          )}
 
-          {/* Input para o orçamento pré-definido (habilitado apenas se o switch estiver ativado) */}
-          <TextField
-            label="Orçamento"
-            type="text"
-            inputProps={{ inputMode: 'numeric' }}
-            value={predefinedBudget}
-            onChange={handlePredefinedBudgetChange}
-            placeholder="Digite o orçamento"
-            fullWidth
-            disabled={!usePredefinedBudget}
-          />
+          <Divider sx={{ my: 3 }} />
 
-          {/* Input para quantidade de alunos (desabilitado se usar orçamento pré-definido) */}
-          <TextField
-            label="Quantidade de Alunos"
-            type="text"
-            inputProps={{ inputMode: 'numeric' }}
-            value={students} // Controlado por students, não por publicCount
-            onChange={handleStudentsChange}
-            placeholder="Digite um número"
-            fullWidth
-            disabled={usePredefinedBudget}
-          />
-        </Box>
-
-        {/* Seção de Resultados, Orçamento e Parcelas em boxes separados */}
-        <Box sx={{ mt: 4, display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {/* Resultados */}
-          <Paper elevation={3} sx={{ p: 3 }}>
-            <Typography variant="h3">Resultados</Typography>
-            {!usePredefinedBudget && (
-              <Typography variant="body1">
-                Público (0,5% dos habitantes): {formatInteger(publicCount)}
-              </Typography>
-            )}
-            {usePredefinedBudget && (
-              <Typography variant="body1">
-                Quantidade de Alunos Possíveis: {formatInteger(possibleStudents)}
-              </Typography>
-            )}
-            <Typography variant="body1">
-              Custo Total: R$ {formatNumber(totalCost)}
-            </Typography>
-          </Paper>
-
-          {/* Orçamento */}
-          <Paper elevation={3} sx={{ p: 3 }}>
-            <Typography variant="h3">Orçamento</Typography>
-            <Typography variant="body1">
-              Entrada (10%): R$ {formatNumber(entryFee)}
-            </Typography>
-            <Typography variant="body1">
-              Entrega (10%): R$ {formatNumber(deliveryFee)}
-            </Typography>
-            <Typography variant="body1">
-              Valor Restante: R$ {formatNumber(remainingCost)}
-            </Typography>
-          </Paper>
-
-          {/* Parcelas */}
-          <Paper elevation={3} sx={{ p: 3 }}>
-            <Typography variant="h3">Parcelas</Typography>
-            {yearlyPayments.length > 0 ? (
-              <>
-                <Typography variant="body1">
-                  Parcela Mensal: R$ {formatNumber(monthlyPayment)}
-                </Typography>
-                {yearlyPayments.map((payment) => (
-                  <Typography key={payment.year} variant="body1">
-                    Total em {payment.year} ({payment.months} meses): R$ {formatNumber(payment.total)}
-                  </Typography>
-                ))}
-              </>
-            ) : (
-              <Typography variant="body1">
-                Nenhuma parcela disponível.
-              </Typography>
-            )}
-          </Paper>
-        </Box>
-      </Container>
-    </ThemeProvider>
-  );
+          <Typography variant="body1" sx={{ fontSize: '1.4rem', mb: 1, fontFamily: FONT_FAMILY }}>
+            Custo Total: <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(totalCost)}</span>
+          </Typography>
+        </Paper>
+      </Box>
+    </Container>
+  );
 };
 
 export default Calculator;
