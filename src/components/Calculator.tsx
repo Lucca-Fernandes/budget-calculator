@@ -202,7 +202,7 @@ const Calculator: React.FC = () => {
           <Divider sx={{ my: 3 }} />
 
           <Typography variant="body1" sx={{ fontSize: '1.4rem', mb: 1, fontFamily: FONT_FAMILY }}>
-            Custo Total: <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(totalCost)}</span>
+            investimento total: <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(totalCost)}</span>
           </Typography>
         </Paper>
       </Box>
