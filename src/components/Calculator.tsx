@@ -23,12 +23,20 @@ const getFormattedCurrentDate = (): string => {
   return `${year}-${month}-${day}`;
 };
 
+// Tipagem para os detalhes de pagamento anuais
+interface YearlyPayment { 
+    year: number; 
+    months: number; 
+    total: number;
+}
+
 const Calculator: React.FC = () => {
   const [students, setStudents] = useState<number>(150);
   const [currentDate, setCurrentDate] = useState<string>(getFormattedCurrentDate()); 
 
   const handleStudentsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    // Permite apenas números inteiros
     if (/^\d*$/.test(value)) {
       setStudents(Number(value));
     }
@@ -37,6 +45,7 @@ const Calculator: React.FC = () => {
 
   const formatNumber = (value: number): string => {
     const [integerPart, decimalPart] = value.toFixed(2).split('.');
+    // Substitui ponto por vírgula para números maiores que 999
     const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     return `${formattedInteger},${decimalPart}`;
   };
@@ -46,48 +55,69 @@ const Calculator: React.FC = () => {
 
   const entryFee = totalCost * 0.1;
   const deliveryFee = totalCost * 0.1;
-  const remainingCost = totalCost - entryFee - deliveryFee;
-
-  const selectedDate = new Date(currentDate);
-  const selectedYear = selectedDate.getFullYear();
-  const selectedMonth = selectedDate.getMonth();
+  const totalFees = entryFee + deliveryFee;
 
   const totalMonthlyParcels = 24;
-
-  const endDate = new Date(selectedDate);
-  endDate.setMonth(selectedDate.getMonth() + totalMonthlyParcels);
-
-  const endYear = endDate.getFullYear();
-  const endMonth = endDate.getMonth();
-
+  const remainingCost = totalCost - totalFees;
   const monthlyPayment = remainingCost / totalMonthlyParcels;
 
-  const yearlyPayments: { year: number; months: number; total: number }[] = [];
-  let totalMonthsCounted = 0;
+  // --- INÍCIO DA LÓGICA DE CÁLCULO CORRIGIDA ---
+  const selectedDate = new Date(currentDate);
+  
+  const yearlyPayments: YearlyPayment[] = [];
 
-  for (let year = selectedYear; year <= endYear; year++) {
-    let monthsInYear = 0;
-
-    if (year === selectedYear) {
-      monthsInYear = 12 - (selectedMonth + 1);
-    } else if (year === endYear) {
-      monthsInYear = endMonth + 1;
-    } else {
-      monthsInYear = 12;
+  // 1. Função auxiliar para encontrar ou criar a entrada de um ano
+  const getYearEntry = (year: number): YearlyPayment => {
+    let entry = yearlyPayments.find(p => p.year === year);
+    if (!entry) {
+      entry = { year, months: 0, total: 0 };
+      yearlyPayments.push(entry);
+      // Garante que a exibição dos anos esteja sempre na ordem correta
+      yearlyPayments.sort((a, b) => a.year - b.year); 
     }
+    return entry;
+  };
 
-    if (totalMonthsCounted + monthsInYear > totalMonthlyParcels) {
-      monthsInYear = totalMonthlyParcels - totalMonthsCounted;
+  // 2. Pagamento da Entrada (30 dias após assinatura)
+  const entryFeePaymentDate = new Date(selectedDate);
+  entryFeePaymentDate.setDate(selectedDate.getDate() + 30);
+  
+  const entryYear = entryFeePaymentDate.getFullYear();
+  const entryEntry = getYearEntry(entryYear);
+  entryEntry.total += entryFee;
+  entryEntry.months += 1; // Contabiliza como 1 bloco de pagamento
+
+  // 3. Pagamento da Entrega (60 dias após assinatura)
+  const deliveryFeePaymentDate = new Date(selectedDate);
+  deliveryFeePaymentDate.setDate(selectedDate.getDate() + 60);
+
+  const deliveryYear = deliveryFeePaymentDate.getFullYear();
+  const deliveryEntry = getYearEntry(deliveryYear);
+  deliveryEntry.total += deliveryFee;
+  deliveryEntry.months += 1; // Contabiliza como 1 bloco de pagamento
+
+  // 4. Início da 1ª das 24 parcelas (após 90 dias)
+  const firstInstallmentDate = new Date(selectedDate);
+  firstInstallmentDate.setDate(selectedDate.getDate() + 90);
+  
+  let currentInstallmentYear = firstInstallmentDate.getFullYear();
+  let currentInstallmentMonth = firstInstallmentDate.getMonth(); // 0 (Jan) a 11 (Dez)
+
+  // 5. Loop para as 24 parcelas mensais
+  for (let i = 0; i < totalMonthlyParcels; i++) {
+    
+    const entry = getYearEntry(currentInstallmentYear);
+    entry.total += monthlyPayment;
+    entry.months += 1; // Contabiliza como 1 bloco de pagamento
+
+    // Avança para o próximo mês/ano
+    currentInstallmentMonth++;
+    if (currentInstallmentMonth > 11) {
+      currentInstallmentMonth = 0; // Janeiro
+      currentInstallmentYear++; // Próximo ano
     }
-
-    if (monthsInYear > 0) {
-      const totalForYear = monthlyPayment * monthsInYear;
-      yearlyPayments.push({ year, months: monthsInYear, total: totalForYear });
-      totalMonthsCounted += monthsInYear;
-    }
-
-    if (totalMonthsCounted >= totalMonthlyParcels) break;
   }
+  // --- FIM DA LÓGICA DE CÁLCULO CORRIGIDA ---
 
   return (
     <Container maxWidth="lg" sx={{ py: 5, minHeight: '100vh' }}>
@@ -111,7 +141,6 @@ const Calculator: React.FC = () => {
         <img
           src={logo}
           alt="Logo Calculadora"
-          // Estilos inline e sx removidos daqui, pois estão no Box pai
         />
       </Box>
 
