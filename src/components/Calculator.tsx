@@ -12,6 +12,8 @@ import {
 import logo from '../assets/logo.png';
 
 const FONT_FAMILY = 'Conthrax, Arial, sans-serif';
+// CORREÇÃO 1: Atualização da cor para o roxo solicitado
+const PRIMARY_PURPLE = '#a73bff'; 
 
 const getFormattedCurrentDate = (): string => {
   const now = new Date();
@@ -28,32 +30,30 @@ interface YearlyPayment {
 }
 
 const Calculator: React.FC = () => {
-  // ESTADO 1: O que o usuário digita (Texto livre) - Inicia com '0'
-  const [studentsInput, setStudentsInput] = useState<string>('0');
+  // CORREÇÃO 2: Inicia como string vazia para exibir o placeholder
+  const [studentsInput, setStudentsInput] = useState<string>('');
   
-  // ESTADO 2: O número confirmado para o cálculo (Só muda ao clicar no botão)
+  // O número confirmado para o cálculo (Inicia zerado)
   const [calculatedStudents, setCalculatedStudents] = useState<number>(0);
 
   const [currentDate, setCurrentDate] = useState<string>(getFormattedCurrentDate()); 
 
-  // Função apenas atualiza o texto do input, sem calcular nada
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setStudentsInput(e.target.value);
   };
 
-  // A MÁGICA: O cálculo só acontece aqui
   const handleCalculate = () => {
-    // 1. Remove tudo que não for número (espaços, letras, etc)
+    // 1. Remove tudo que não for número
     const cleanString = studentsInput.replace(/\D/g, '');
     
     // 2. Converte para número (se vazio, vira 0)
     const numberValue = parseInt(cleanString, 10) || 0;
 
-    // 3. Atualiza o estado que controla a exibição dos valores monetários
+    // 3. Atualiza o estado do cálculo
     setCalculatedStudents(numberValue);
 
-    // Opcional: Atualiza o input visual para mostrar o número limpo (ex: remove zeros a esquerda extras)
-    setStudentsInput(numberValue.toString());
+    // Opcional: Se quiser que o input mostre o número formatado após calcular, descomente abaixo:
+    // if (numberValue > 0) setStudentsInput(numberValue.toString());
   };
 
   const formatNumber = (value: number): string => {
@@ -62,7 +62,7 @@ const Calculator: React.FC = () => {
     return `${formattedInteger},${decimalPart}`;
   };
 
-  // --- CÁLCULOS (Usam calculatedStudents e não o input direto) ---
+  // --- CÁLCULOS ---
   const baseCostPerStudent = 31500;
   const totalCost = calculatedStudents * baseCostPerStudent;
 
@@ -88,7 +88,6 @@ const Calculator: React.FC = () => {
     return entry;
   };
 
-  // Só executamos a lógica de datas se houver alunos para calcular
   if (calculatedStudents > 0) {
       const entryFeePaymentDate = new Date(selectedDate);
       entryFeePaymentDate.setDate(selectedDate.getDate() + 30);
@@ -167,7 +166,7 @@ const Calculator: React.FC = () => {
             <TextField
             label="Quantidade de Alunos"
             type="text"
-            placeholder="Digite a quantidade"
+            placeholder="Digite a quantidade" // Placeholder visível agora
             value={studentsInput}
             onChange={handleInputChange}
             InputLabelProps={{ shrink: true, sx: { fontSize: '1.2rem', fontFamily: FONT_FAMILY, } }}
@@ -177,7 +176,6 @@ const Calculator: React.FC = () => {
             }}
             fullWidth
             variant="outlined"
-            // Permite calcular ao apertar ENTER
             onKeyDown={(e) => {
                 if (e.key === 'Enter') handleCalculate();
             }}
@@ -191,7 +189,11 @@ const Calculator: React.FC = () => {
                     fontFamily: FONT_FAMILY,
                     fontSize: '1.2rem',
                     px: 4,
-                    fontWeight: 'bold'
+                    fontWeight: 'bold',
+                    backgroundColor: PRIMARY_PURPLE,
+                    '&:hover': {
+                        backgroundColor: '#8226c2', // Um tom levemente mais escuro para o hover
+                    }
                 }}
             >
                 Calcular
@@ -219,19 +221,29 @@ const Calculator: React.FC = () => {
                 </Typography>
 
                 {yearlyPayments.length > 0 ? (
+                    <>
+                    {/* Texto Roxo fora da Box */}
+                    <Typography
+                            variant="body1"
+                            sx={{ fontWeight: 'bold', fontSize: '1.8rem', fontFamily: FONT_FAMILY, color: PRIMARY_PURPLE, mb: 2 }} 
+                        >
+                            {totalMonthlyParcels}x <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(monthlyPayment)}</span>
+                    </Typography>
+
                     <Box sx={{
                     mb: 3,
-                    border: '5px solid #1976d2', 
+                    border: `5px solid ${PRIMARY_PURPLE}`, 
                     px: 3, 
                     py: 2, 
                     bgcolor: 'background.default',
                     borderRadius: '8px',
                     }}>                
+                    {/* Texto Preto dentro da Box */}
                     <Typography
                             variant="body1"
-                            sx={{ fontWeight: 'bold', fontSize: '1.8rem', fontFamily: FONT_FAMILY, color: 'primary.main' }} 
+                            sx={{ fontWeight: 'bold', fontSize: '1.6rem', fontFamily: FONT_FAMILY, color: 'black', mb: 2 }} 
                         >
-                            {totalMonthlyParcels}x <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(monthlyPayment)}</span>
+                            Distribuição de orçamento
                         </Typography>
                     
                     {yearlyPayments.map((payment) => (
@@ -240,6 +252,7 @@ const Calculator: React.FC = () => {
                         </Typography>
                     ))}
                     </Box>
+                    </>
                 ) : null}
 
                 <Divider sx={{ my: 3 }} />
@@ -249,10 +262,10 @@ const Calculator: React.FC = () => {
                 </Typography>
             </>
           ) : (
-             // Estado vazio (quando é 0)
+             // Estado vazio
              <Box sx={{ textAlign: 'center', py: 4, opacity: 0.6 }}>
                 <Typography variant="h5" sx={{ fontFamily: FONT_FAMILY }}>
-                    Digite a quantidade de alunos e clique em Calcular para ver o orçamento.
+                    Digite a quantidade de alunos e clique em Calcular.
                 </Typography>
              </Box>
           )}
