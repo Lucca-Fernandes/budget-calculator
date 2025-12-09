@@ -12,8 +12,8 @@ import {
 import logo from '../assets/logo.png';
 
 const FONT_FAMILY = 'Conthrax, Arial, sans-serif';
-// CORREÇÃO 1: Atualização da cor para o roxo solicitado
-const PRIMARY_PURPLE = '#a73bff'; 
+// CORREÇÃO: Atualização da cor para o novo tom solicitado
+const PRIMARY_PURPLE = '#9100ff'; 
 
 const getFormattedCurrentDate = (): string => {
   const now = new Date();
@@ -30,7 +30,7 @@ interface YearlyPayment {
 }
 
 const Calculator: React.FC = () => {
-  // CORREÇÃO 2: Inicia como string vazia para exibir o placeholder
+  // Inicia como string vazia para exibir o placeholder
   const [studentsInput, setStudentsInput] = useState<string>('');
   
   // O número confirmado para o cálculo (Inicia zerado)
@@ -51,9 +51,6 @@ const Calculator: React.FC = () => {
 
     // 3. Atualiza o estado do cálculo
     setCalculatedStudents(numberValue);
-
-    // Opcional: Se quiser que o input mostre o número formatado após calcular, descomente abaixo:
-    // if (numberValue > 0) setStudentsInput(numberValue.toString());
   };
 
   const formatNumber = (value: number): string => {
@@ -166,7 +163,7 @@ const Calculator: React.FC = () => {
             <TextField
             label="Quantidade de Alunos"
             type="text"
-            placeholder="Digite a quantidade" // Placeholder visível agora
+            placeholder="Digite a quantidade"
             value={studentsInput}
             onChange={handleInputChange}
             InputLabelProps={{ shrink: true, sx: { fontSize: '1.2rem', fontFamily: FONT_FAMILY, } }}
@@ -192,7 +189,7 @@ const Calculator: React.FC = () => {
                     fontWeight: 'bold',
                     backgroundColor: PRIMARY_PURPLE,
                     '&:hover': {
-                        backgroundColor: '#8226c2', // Um tom levemente mais escuro para o hover
+                        backgroundColor: '#7200c9', // Tom mais escuro para o hover
                     }
                 }}
             >
@@ -222,7 +219,7 @@ const Calculator: React.FC = () => {
 
                 {yearlyPayments.length > 0 ? (
                     <>
-                    {/* Texto Roxo fora da Box */}
+                    {/* Texto com a nova cor */}
                     <Typography
                             variant="body1"
                             sx={{ fontWeight: 'bold', fontSize: '1.8rem', fontFamily: FONT_FAMILY, color: PRIMARY_PURPLE, mb: 2 }} 
@@ -232,7 +229,7 @@ const Calculator: React.FC = () => {
 
                     <Box sx={{
                     mb: 3,
-                    border: `5px solid ${PRIMARY_PURPLE}`, 
+                    border: `5px solid ${PRIMARY_PURPLE}`, // Borda com a nova cor
                     px: 3, 
                     py: 2, 
                     bgcolor: 'background.default',
