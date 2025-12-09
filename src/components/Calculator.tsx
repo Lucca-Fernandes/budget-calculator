@@ -6,9 +6,10 @@ import {
   Container,
   Paper,
   Divider,
+  Button,
 } from '@mui/material';
 
-import logo from '../assets/logo.png'; // Certifique-se que o caminho está correto
+import logo from '../assets/logo.png';
 
 const FONT_FAMILY = 'Conthrax, Arial, sans-serif';
 
@@ -27,22 +28,32 @@ interface YearlyPayment {
 }
 
 const Calculator: React.FC = () => {
-  // CORREÇÃO 1: O estado inicia como string '150'
-  const [studentsStr, setStudentsStr] = useState<string>('150');
+  // ESTADO 1: O que o usuário digita (Texto livre) - Inicia com '0'
+  const [studentsInput, setStudentsInput] = useState<string>('0');
+  
+  // ESTADO 2: O número confirmado para o cálculo (Só muda ao clicar no botão)
+  const [calculatedStudents, setCalculatedStudents] = useState<number>(0);
+
   const [currentDate, setCurrentDate] = useState<string>(getFormattedCurrentDate()); 
 
-  // CORREÇÃO 2: Deriva o número a partir da string para os cálculos
-  // Se a conversão falhar (NaN), assume 0
-  const students = parseInt(studentsStr, 10) || 0;
+  // Função apenas atualiza o texto do input, sem calcular nada
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setStudentsInput(e.target.value);
+  };
 
-  const handleStudentsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+  // A MÁGICA: O cálculo só acontece aqui
+  const handleCalculate = () => {
+    // 1. Remove tudo que não for número (espaços, letras, etc)
+    const cleanString = studentsInput.replace(/\D/g, '');
     
-    // CORREÇÃO 3: Regex mais permissivo ou apenas sanitização
-    // Permite apenas dígitos. Se o usuário colar "150 ", removemos o espaço.
-    const cleanValue = value.replace(/\D/g, '');
+    // 2. Converte para número (se vazio, vira 0)
+    const numberValue = parseInt(cleanString, 10) || 0;
 
-    setStudentsStr(cleanValue);
+    // 3. Atualiza o estado que controla a exibição dos valores monetários
+    setCalculatedStudents(numberValue);
+
+    // Opcional: Atualiza o input visual para mostrar o número limpo (ex: remove zeros a esquerda extras)
+    setStudentsInput(numberValue.toString());
   };
 
   const formatNumber = (value: number): string => {
@@ -51,8 +62,9 @@ const Calculator: React.FC = () => {
     return `${formattedInteger},${decimalPart}`;
   };
 
+  // --- CÁLCULOS (Usam calculatedStudents e não o input direto) ---
   const baseCostPerStudent = 31500;
-  const totalCost = students * baseCostPerStudent;
+  const totalCost = calculatedStudents * baseCostPerStudent;
 
   const entryFee = totalCost * 0.1;
   const deliveryFee = totalCost * 0.1;
@@ -62,7 +74,7 @@ const Calculator: React.FC = () => {
   const remainingCost = totalCost - totalFees;
   const monthlyPayment = remainingCost / totalMonthlyParcels;
 
-  // Lógica de Datas e Parcelas (Mantida igual, pois funciona bem com o número derivado)
+  // Lógica de Datas
   const selectedDate = new Date(currentDate);
   const yearlyPayments: YearlyPayment[] = [];
 
@@ -76,34 +88,37 @@ const Calculator: React.FC = () => {
     return entry;
   };
 
-  const entryFeePaymentDate = new Date(selectedDate);
-  entryFeePaymentDate.setDate(selectedDate.getDate() + 30);
-  const entryYear = entryFeePaymentDate.getFullYear();
-  const entryEntry = getYearEntry(entryYear);
-  entryEntry.total += entryFee;
-  entryEntry.months += 1;
+  // Só executamos a lógica de datas se houver alunos para calcular
+  if (calculatedStudents > 0) {
+      const entryFeePaymentDate = new Date(selectedDate);
+      entryFeePaymentDate.setDate(selectedDate.getDate() + 30);
+      const entryYear = entryFeePaymentDate.getFullYear();
+      const entryEntry = getYearEntry(entryYear);
+      entryEntry.total += entryFee;
+      entryEntry.months += 1;
 
-  const deliveryFeePaymentDate = new Date(selectedDate);
-  deliveryFeePaymentDate.setDate(selectedDate.getDate() + 60);
-  const deliveryYear = deliveryFeePaymentDate.getFullYear();
-  const deliveryEntry = getYearEntry(deliveryYear);
-  deliveryEntry.total += deliveryFee;
-  deliveryEntry.months += 1;
+      const deliveryFeePaymentDate = new Date(selectedDate);
+      deliveryFeePaymentDate.setDate(selectedDate.getDate() + 60);
+      const deliveryYear = deliveryFeePaymentDate.getFullYear();
+      const deliveryEntry = getYearEntry(deliveryYear);
+      deliveryEntry.total += deliveryFee;
+      deliveryEntry.months += 1;
 
-  const firstInstallmentDate = new Date(selectedDate);
-  firstInstallmentDate.setDate(selectedDate.getDate() + 90);
-  let currentInstallmentYear = firstInstallmentDate.getFullYear();
-  let currentInstallmentMonth = firstInstallmentDate.getMonth();
+      const firstInstallmentDate = new Date(selectedDate);
+      firstInstallmentDate.setDate(selectedDate.getDate() + 90);
+      let currentInstallmentYear = firstInstallmentDate.getFullYear();
+      let currentInstallmentMonth = firstInstallmentDate.getMonth();
 
-  for (let i = 0; i < totalMonthlyParcels; i++) {
-    const entry = getYearEntry(currentInstallmentYear);
-    entry.total += monthlyPayment;
-    entry.months += 1;
-    currentInstallmentMonth++;
-    if (currentInstallmentMonth > 11) {
-      currentInstallmentMonth = 0;
-      currentInstallmentYear++;
-    }
+      for (let i = 0; i < totalMonthlyParcels; i++) {
+        const entry = getYearEntry(currentInstallmentYear);
+        entry.total += monthlyPayment;
+        entry.months += 1;
+        currentInstallmentMonth++;
+        if (currentInstallmentMonth > 11) {
+          currentInstallmentMonth = 0;
+          currentInstallmentYear++;
+        }
+      }
   }
 
   return (
@@ -147,21 +162,41 @@ const Calculator: React.FC = () => {
           variant="outlined"
         />
 
-        <TextField
-          label="Quantidade de Alunos"
-          type="text" 
-          placeholder="Digite um número"
-          // CORREÇÃO 4: O valor do input é a string, permitindo campo vazio
-          value={studentsStr}
-          onChange={handleStudentsChange}
-          InputLabelProps={{ shrink: true, sx: { fontSize: '1.2rem', fontFamily: FONT_FAMILY, } }}
-          inputProps={{
-            inputMode: 'numeric',
-            sx: { fontSize: '1.5rem', fontFamily: FONT_FAMILY, m: 0.5 }
-          }}
-          fullWidth
-          variant="outlined"
-        />
+        {/* Grupo Input + Botão */}
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'stretch' }}>
+            <TextField
+            label="Quantidade de Alunos"
+            type="text"
+            placeholder="Digite a quantidade"
+            value={studentsInput}
+            onChange={handleInputChange}
+            InputLabelProps={{ shrink: true, sx: { fontSize: '1.2rem', fontFamily: FONT_FAMILY, } }}
+            inputProps={{
+                inputMode: 'numeric',
+                sx: { fontSize: '1.5rem', fontFamily: FONT_FAMILY, m: 0.5 }
+            }}
+            fullWidth
+            variant="outlined"
+            // Permite calcular ao apertar ENTER
+            onKeyDown={(e) => {
+                if (e.key === 'Enter') handleCalculate();
+            }}
+            />
+            
+            <Button 
+                variant="contained" 
+                size="large"
+                onClick={handleCalculate}
+                sx={{ 
+                    fontFamily: FONT_FAMILY,
+                    fontSize: '1.2rem',
+                    px: 4,
+                    fontWeight: 'bold'
+                }}
+            >
+                Calcular
+            </Button>
+        </Box>
       </Box>
 
       <Box sx={{ mt: 6 }}>
@@ -173,46 +208,54 @@ const Calculator: React.FC = () => {
             Orçamento
           </Typography>
 
-          <Typography variant="body1" sx={{ fontSize: '1.4rem', mb: 1, fontFamily: FONT_FAMILY, }}>
-            10% - 30 dias após assinatura do contrato: <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(entryFee)}</span>
-          </Typography>
-
-          <Typography variant="body1" sx={{ fontSize: '1.4rem', mb: 3, fontFamily: FONT_FAMILY, ml: 0.3 }}>
-            10% - 60 dias após assinatura do contrato: <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(deliveryFee)}</span>
-          </Typography>
-
-          {yearlyPayments.length > 0 ? (
-            <Box sx={{
-              mb: 3,
-              border: '5px solid #1976d2', 
-              px: 3, 
-              py: 2, 
-              bgcolor: 'background.default',
-              borderRadius: '8px',
-            }}>                
-            <Typography
-                    variant="body1"
-                    sx={{ fontWeight: 'bold', fontSize: '1.8rem', fontFamily: FONT_FAMILY, color: 'primary.main' }} 
-                >
-                    {totalMonthlyParcels}x <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(monthlyPayment)}</span>
+          {calculatedStudents > 0 ? (
+            <>
+                <Typography variant="body1" sx={{ fontSize: '1.4rem', mb: 1, fontFamily: FONT_FAMILY, }}>
+                    10% - 30 dias após assinatura do contrato: <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(entryFee)}</span>
                 </Typography>
-              {yearlyPayments.map((payment) => (
-                <Typography key={payment.year} variant="body1" sx={{ fontSize: '1.1rem', fontFamily: FONT_FAMILY, mt: 0.5 }}>
-                  Total em {payment.year} ({payment.months} meses): <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(payment.total)}</span>
+
+                <Typography variant="body1" sx={{ fontSize: '1.4rem', mb: 3, fontFamily: FONT_FAMILY, ml: 0.3 }}>
+                    10% - 60 dias após assinatura do contrato: <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(deliveryFee)}</span>
                 </Typography>
-              ))}
-            </Box>
+
+                {yearlyPayments.length > 0 ? (
+                    <Box sx={{
+                    mb: 3,
+                    border: '5px solid #1976d2', 
+                    px: 3, 
+                    py: 2, 
+                    bgcolor: 'background.default',
+                    borderRadius: '8px',
+                    }}>                
+                    <Typography
+                            variant="body1"
+                            sx={{ fontWeight: 'bold', fontSize: '1.8rem', fontFamily: FONT_FAMILY, color: 'primary.main' }} 
+                        >
+                            {totalMonthlyParcels}x <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(monthlyPayment)}</span>
+                        </Typography>
+                    
+                    {yearlyPayments.map((payment) => (
+                        <Typography key={payment.year} variant="body1" sx={{ fontSize: '1.1rem', fontFamily: FONT_FAMILY, mt: 0.5 }}>
+                        Total em {payment.year} ({payment.months} meses): <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(payment.total)}</span>
+                        </Typography>
+                    ))}
+                    </Box>
+                ) : null}
+
+                <Divider sx={{ my: 3 }} />
+
+                <Typography variant="body1" sx={{ fontSize: '1.4rem', mb: 1, fontFamily: FONT_FAMILY }}>
+                    Investimento total: <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(totalCost)}</span>
+                </Typography>
+            </>
           ) : (
-            <Typography variant="body1" sx={{ fontSize: '1.4rem', mb: 3, fontFamily: FONT_FAMILY }}>
-              Nenhuma parcela disponível.
-            </Typography>
+             // Estado vazio (quando é 0)
+             <Box sx={{ textAlign: 'center', py: 4, opacity: 0.6 }}>
+                <Typography variant="h5" sx={{ fontFamily: FONT_FAMILY }}>
+                    Digite a quantidade de alunos e clique em Calcular para ver o orçamento.
+                </Typography>
+             </Box>
           )}
-
-          <Divider sx={{ my: 3 }} />
-
-          <Typography variant="body1" sx={{ fontSize: '1.4rem', mb: 1, fontFamily: FONT_FAMILY }}>
-            Investimento total: <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(totalCost)}</span>
-          </Typography>
         </Paper>
       </Box>
     </Container>
