@@ -6,20 +6,19 @@ const nodemailer = require('nodemailer');
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '10mb' })); // Aumentado para suportar o envio do PDF em base64
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-// Configuração do Transportador de Email (Exemplo Gmail)
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER, // Seu email no .env
-    pass: process.env.EMAIL_PASS  // Sua senha de app no .env
+    user: process.env.EMAIL_USER, 
+    pass: process.env.EMAIL_PASS  
   }
 });
 
-// --- Rotas de Emails no Banco (Mantidas) ---
 app.get('/emails', async (req, res) => {
   const result = await pool.query('SELECT * FROM contact_emails ORDER BY created_at DESC');
   res.json(result.rows);
@@ -43,7 +42,6 @@ app.delete('/emails/:id', async (req, res) => {
   res.json({ message: 'Removido' });
 });
 
-// --- NOVA ROTA: DISPARO DE PDF ---
 app.post('/send-budget', async (req, res) => {
   const { pdfBase64, recipients } = req.body;
 

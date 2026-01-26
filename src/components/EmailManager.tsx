@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Box, TextField, Button, Typography, Checkbox, IconButton, List, ListItem, ListItemText, ListItemSecondaryAction, Divider } from '@mui/material';
+import { Box, TextField, Button, Typography, Checkbox, IconButton, List, ListItem, ListItemText, ListItemSecondaryAction } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css'; 
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
-const FONT_FAMILY = 'Conthrax, Arial, sans-serif';
-const PRIMARY_PURPLE = '#9100ff';
 const API_URL = 'http://localhost:3001';
 
 export const EmailManager: React.FC = () => {
@@ -16,104 +17,108 @@ export const EmailManager: React.FC = () => {
   const fetchEmails = () => fetch(`${API_URL}/emails`).then(r => r.json()).then(setEmails);
   useEffect(() => { fetchEmails(); }, []);
 
-  // VALIDAÇÃO DE EMAIL
-  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
   const handleAddEmail = async () => {
-    if (!isValidEmail(newEmail)) {
-      alert("Por favor, insira um e-mail válido.");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      toast.error("Por favor, insira um e-mail válido!");
       return;
     }
-    await fetch(`${API_URL}/emails`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: newEmail }),
-    });
-    setNewEmail('');
-    fetchEmails();
+    try {
+      await fetch(`${API_URL}/emails`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: newEmail }),
+      });
+      setNewEmail('');
+      fetchEmails();
+      toast.success("E-mail adicionado à lista!");
+    } catch { toast.error("Erro ao salvar e-mail."); }
   };
 
   const handleSendPDF = async () => {
     const selected = emails.filter(e => e.is_selected).map(e => e.email);
-    if (selected.length === 0) return alert("Selecione ao menos um e-mail");
+    if (selected.length === 0) {
+      toast.warn("Selecione ao menos um destinatário!");
+      return;
+    }
 
     setLoading(true);
-    
-    // 1. Gerar PDF Simples
-    const doc = new jsPDF();
-    doc.setFontSize(20);
-    doc.text("TESTANDO ENVIO", 20, 20);
-    doc.setFontSize(12);
-    doc.text("Este é um PDF de teste gerado pelo sistema.", 20, 40);
-    const pdfBase64 = doc.output('datauristring');
+    const area = document.getElementById('capture-area');
+    if (!area) return;
 
-    // 2. Enviar para o Backend
     try {
+      const canvas = await html2canvas(area, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      const pdfBase64 = pdf.output('datauristring');
+
       const res = await fetch(`${API_URL}/send-budget`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pdfBase64, recipients: selected }),
       });
-      if(res.ok) alert("Enviado com sucesso!");
-    } catch (e) {
-      alert("Erro ao enviar.");
+
+      if (res.ok) toast.success("Orçamento enviado com sucesso!");
+      else toast.error("Falha ao enviar e-mail.");
+    } catch {
+      toast.error("Erro ao gerar ou enviar o PDF.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Box sx={{ mt: 3 }}>
-      <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
-        <TextField
-          fullWidth
-          size="small"
-          placeholder="exemplo@email.com"
-          value={newEmail}
-          onChange={(e) => setNewEmail(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleAddEmail()}
+    <Box sx={{ mt: 3, p: 2, borderTop: '1px dashed #ccc' }}>
+      <ToastContainer position="top-right" autoClose={3000} />
+      <Typography variant="h6" sx={{ mb: 2, fontFamily: 'Conthrax' }}>Enviar Orçamento</Typography>
+      
+      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+        <TextField 
+          fullWidth size="small" 
+          placeholder="email@exemplo.com" 
+          value={newEmail} 
+          onChange={e => setNewEmail(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleAddEmail()}
         />
-        <Button variant="contained" onClick={handleAddEmail} sx={{ bgcolor: PRIMARY_PURPLE }}>
-          <AddIcon />
-        </Button>
+        <Button variant="contained" onClick={handleAddEmail} sx={{ bgcolor: '#9100ff' }}><AddIcon /></Button>
       </Box>
 
-      <List sx={{ bgcolor: 'rgba(0,0,0,0.02)', borderRadius: '8px' }}>
-        {emails.map((item) => (
-          <ListItem key={item.id} divider>
+      <List sx={{ maxHeight: 200, overflow: 'auto', bgcolor: '#f5f5f5', borderRadius: 1 }}>
+        {emails.map(e => (
+          <ListItem key={e.id} divider>
             <Checkbox 
-              checked={item.is_selected} 
+              checked={e.is_selected} 
               onChange={async () => {
-                await fetch(`${API_URL}/emails/${item.id}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ is_selected: !item.is_selected }),
+                await fetch(`${API_URL}/emails/${e.id}`, { 
+                  method: 'PATCH', 
+                  headers: {'Content-Type': 'application/json'}, 
+                  body: JSON.stringify({is_selected: !e.is_selected}) 
                 });
                 fetchEmails();
-              }}
-              sx={{ color: PRIMARY_PURPLE }}
+              }} 
             />
-            <ListItemText primary={item.email} />
-            <ListItemSecondaryAction>
-              <IconButton onClick={async () => {
-                await fetch(`${API_URL}/emails/${item.id}`, { method: 'DELETE' });
-                fetchEmails();
-              }}>
-                <DeleteIcon sx={{ color: 'red' }} />
-              </IconButton>
-            </ListItemSecondaryAction>
+            <ListItemText primary={e.email} />
+            <IconButton onClick={async () => {
+              await fetch(`${API_URL}/emails/${e.id}`, { method: 'DELETE' });
+              fetchEmails();
+              toast.info("E-mail removido.");
+            }}><DeleteIcon sx={{ color: 'red' }} /></IconButton>
           </ListItem>
         ))}
       </List>
 
-      <Button
-        fullWidth
-        variant="contained"
-        disabled={loading || emails.filter(e => e.is_selected).length === 0}
-        onClick={handleSendPDF}
-        sx={{ mt: 3, py: 1.5, fontFamily: FONT_FAMILY, bgcolor: PRIMARY_PURPLE, fontWeight: 'bold' }}
+      <Button 
+        fullWidth variant="contained" 
+        disabled={loading || emails.filter(e => e.is_selected).length === 0} 
+        onClick={handleSendPDF} 
+        sx={{ mt: 2, bgcolor: '#9100ff', py: 1.5, fontWeight: 'bold' }}
       >
-        {loading ? "ENVIANDO..." : "GERAR E ENVIAR PDF TESTE"}
+        {loading ? "PROCESSANDO..." : "GERAR E ENVIAR PDF"}
       </Button>
     </Box>
   );
