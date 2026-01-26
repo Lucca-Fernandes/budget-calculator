@@ -1,5 +1,5 @@
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import Calculator from "./components/Calculator";
+import CalculatorPage from './pages/CalculatorPage';
 
 // Definição do tema para usar a fonte Conthrax
 const appTheme = createTheme({
@@ -33,7 +33,7 @@ function App() {
   return (
     // Certifique-se de que o ThemeProvider esteja aqui
     <ThemeProvider theme={appTheme}>
-      <Calculator/>
+      <CalculatorPage/>
     </ThemeProvider>
   );
 }
