@@ -11,40 +11,30 @@ const getFormattedCurrentDate = (): string => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 };
 
-interface YearlyPayment { 
-    year: number; 
-    months: number; 
-    total: number;
-}
+interface YearlyPayment { year: number; months: number; total: number; }
 
 const BudgetCalculator: React.FC = () => {
   const [studentsInput, setStudentsInput] = useState<string>('');
   const [calculatedStudents, setCalculatedStudents] = useState<number>(0);
   const [currentDate, setCurrentDate] = useState<string>(getFormattedCurrentDate());
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStudentsInput(e.target.value);
-  };
-
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => setStudentsInput(e.target.value);
+  
   const handleCalculate = () => {
     const cleanString = studentsInput.replace(/\D/g, '');
-    const numberValue = parseInt(cleanString, 10) || 0;
-    setCalculatedStudents(numberValue);
+    setCalculatedStudents(parseInt(cleanString, 10) || 0);
   };
 
   const formatNumber = (value: number): string => {
     const [integerPart, decimalPart] = value.toFixed(2).split('.');
-    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    return `${formattedInteger},${decimalPart}`;
+    return `${integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.')},${decimalPart}`;
   };
 
-  const baseCostPerStudent = 31500;
-  const totalCost = calculatedStudents * baseCostPerStudent;
+  const totalCost = calculatedStudents * 31500;
   const entryFee = totalCost * 0.1;
   const deliveryFee = totalCost * 0.1;
   const totalMonthlyParcels = 24;
-  const remainingCost = totalCost - (entryFee + deliveryFee);
-  const monthlyPayment = remainingCost / totalMonthlyParcels;
+  const monthlyPayment = (totalCost - (entryFee + deliveryFee)) / totalMonthlyParcels;
 
   const selectedDate = new Date(currentDate);
   const isDateValid = !isNaN(selectedDate.getTime()); 
@@ -61,63 +51,47 @@ const BudgetCalculator: React.FC = () => {
   };
 
   if (calculatedStudents > 0 && isDateValid) {
-      const entryFeePaymentDate = new Date(selectedDate);
-      entryFeePaymentDate.setDate(selectedDate.getDate() + 30);
-      const entryEntry = getYearEntry(entryFeePaymentDate.getFullYear());
-      entryEntry.total += entryFee;
-      entryEntry.months += 1;
+      const d30 = new Date(selectedDate);
+      d30.setDate(selectedDate.getDate() + 30);
+      const e30 = getYearEntry(d30.getFullYear());
+      e30.total += entryFee; e30.months += 1;
 
-      const deliveryFeePaymentDate = new Date(selectedDate);
-      deliveryFeePaymentDate.setDate(selectedDate.getDate() + 60);
-      const deliveryEntry = getYearEntry(deliveryFeePaymentDate.getFullYear());
-      deliveryEntry.total += deliveryFee;
-      deliveryEntry.months += 1;
+      const d60 = new Date(selectedDate);
+      d60.setDate(selectedDate.getDate() + 60);
+      const e60 = getYearEntry(d60.getFullYear());
+      e60.total += deliveryFee; e60.months += 1;
 
-      const firstInstallmentDate = new Date(selectedDate);
-      firstInstallmentDate.setDate(selectedDate.getDate() + 90);
-      let currentInstallmentYear = firstInstallmentDate.getFullYear();
-      let currentInstallmentMonth = firstInstallmentDate.getMonth();
+      const fDate = new Date(selectedDate);
+      fDate.setDate(selectedDate.getDate() + 90);
+      let cYear = fDate.getFullYear();
+      let cMonth = fDate.getMonth();
 
       for (let i = 0; i < totalMonthlyParcels; i++) {
-        const entry = getYearEntry(currentInstallmentYear);
+        const entry = getYearEntry(cYear);
         entry.total += monthlyPayment;
         entry.months += 1;
-        currentInstallmentMonth++;
-        if (currentInstallmentMonth > 11) {
-          currentInstallmentMonth = 0;
-          currentInstallmentYear++;
-        }
+        cMonth++;
+        if (cMonth > 11) { cMonth = 0; cYear++; }
       }
   }
 
   return (
     <Box>
       <BudgetForm 
-        currentDate={currentDate} 
-        setCurrentDate={setCurrentDate}
-        studentsInput={studentsInput}
-        handleInputChange={handleInputChange}
-        handleCalculate={handleCalculate}
-        fontFamily={FONT_FAMILY}
-        primaryColor={PRIMARY_PURPLE}
+        currentDate={currentDate} setCurrentDate={setCurrentDate}
+        studentsInput={studentsInput} handleInputChange={handleInputChange}
+        handleCalculate={handleCalculate} fontFamily={FONT_FAMILY} primaryColor={PRIMARY_PURPLE}
       />
-      
       <Paper elevation={3} sx={{ p: 5 }}>
         <Typography variant="h3" sx={{ mb: 5, fontSize: '2.5rem', fontFamily: FONT_FAMILY, fontWeight: 700 }}>
           Orçamento
         </Typography>
-
         <BudgetResult 
-          calculatedStudents={calculatedStudents}
-          entryFee={entryFee}
-          deliveryFee={deliveryFee}
-          monthlyPayment={monthlyPayment}
-          totalMonthlyParcels={totalMonthlyParcels}
-          yearlyPayments={yearlyPayments}
-          totalCost={totalCost}
-          formatNumber={formatNumber}
-          fontFamily={FONT_FAMILY}
-          primaryColor={PRIMARY_PURPLE}
+          calculatedStudents={calculatedStudents} entryFee={entryFee}
+          deliveryFee={deliveryFee} monthlyPayment={monthlyPayment}
+          totalMonthlyParcels={totalMonthlyParcels} yearlyPayments={yearlyPayments}
+          totalCost={totalCost} formatNumber={formatNumber}
+          fontFamily={FONT_FAMILY} primaryColor={PRIMARY_PURPLE}
         />
       </Paper>
     </Box>

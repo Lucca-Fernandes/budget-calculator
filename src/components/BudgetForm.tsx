@@ -32,7 +32,10 @@ export const BudgetForm: React.FC<Props> = ({
         value={studentsInput}
         onChange={handleInputChange}
         InputLabelProps={{ shrink: true, sx: { fontSize: '1.2rem', fontFamily } }}
-        inputProps={{ inputMode: 'numeric', sx: { fontSize: '1.5rem', fontFamily, m: 0.5 } }}
+        inputProps={{
+            inputMode: 'numeric',
+            sx: { fontSize: '1.5rem', fontFamily, m: 0.5 }
+        }}
         fullWidth
         onKeyDown={(e) => e.key === 'Enter' && handleCalculate()}
       />

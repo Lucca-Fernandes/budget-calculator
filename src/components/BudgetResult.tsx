@@ -43,7 +43,7 @@ export const BudgetResult: React.FC<Props> = ({
           <Typography variant="body1" sx={{ fontWeight: 'bold', fontSize: '1.8rem', fontFamily, color: primaryColor, mb: 2 }}>
             {totalMonthlyParcels}x <span style={{ whiteSpace: 'nowrap' }}>R$ {formatNumber(monthlyPayment)}</span>
           </Typography>
-          <Box sx={{ mb: 3, border: `5px solid ${primaryColor}`, px: 3, py: 2, borderRadius: '8px' }}>
+          <Box sx={{ mb: 3, border: `5px solid ${primaryColor}`, px: 3, py: 2, borderRadius: '8px', bgcolor: 'background.default' }}>
             <Typography variant="body1" sx={{ fontWeight: 'bold', fontSize: '1.6rem', fontFamily, color: 'black', mb: 2 }}>
               Distribuição de orçamento
             </Typography>
