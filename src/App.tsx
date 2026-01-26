@@ -1,5 +1,5 @@
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CalculatorPage from './pages/CalculatorPage';
+import EmailTriggerPage from './pages/EmailTriggerPage';
 
 
 const appTheme = createTheme({
@@ -30,7 +30,7 @@ const appTheme = createTheme({
 function App() {
   return (
     <ThemeProvider theme={appTheme}>
-      <CalculatorPage/>
+      <EmailTriggerPage/>
     </ThemeProvider>
   );
 }
