@@ -1,7 +1,7 @@
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import Calculator from "./components/Calculator";
+import CalculatorPage from './pages/CalculatorPage';
 
-// Definição do tema para usar a fonte Conthrax
+
 const appTheme = createTheme({
   palette: {
     primary: {
@@ -12,7 +12,6 @@ const appTheme = createTheme({
     },
   },
   typography: {
-    // Definindo a fonte Conthrax como padrão para toda a tipografia
     fontFamily: 'Conthrax, Arial, sans-serif', 
     h1: {
       fontSize: '3rem',
@@ -25,15 +24,13 @@ const appTheme = createTheme({
       marginTop: '1rem',
       marginBottom: '1rem',
     },
-    // O Calculator.tsx agora usa estilos inline (sx) para tamanhos de texto ainda maiores
   },
 });
 
 function App() {
   return (
-    // Certifique-se de que o ThemeProvider esteja aqui
     <ThemeProvider theme={appTheme}>
-      <Calculator/>
+      <CalculatorPage/>
     </ThemeProvider>
   );
 }

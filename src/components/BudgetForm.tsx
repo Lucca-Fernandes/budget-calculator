@@ -12,7 +12,6 @@ import {
 import logo from '../assets/logo.png';
 
 const FONT_FAMILY = 'Conthrax, Arial, sans-serif';
-// CORREÇÃO: Atualização da cor para o novo tom solicitado
 const PRIMARY_PURPLE = '#9100ff'; 
 
 const getFormattedCurrentDate = (): string => {
@@ -30,10 +29,8 @@ interface YearlyPayment {
 }
 
 const Calculator: React.FC = () => {
-  // Inicia como string vazia para exibir o placeholder
   const [studentsInput, setStudentsInput] = useState<string>('');
   
-  // O número confirmado para o cálculo (Inicia zerado)
   const [calculatedStudents, setCalculatedStudents] = useState<number>(0);
 
   const [currentDate, setCurrentDate] = useState<string>(getFormattedCurrentDate()); 
@@ -43,13 +40,10 @@ const Calculator: React.FC = () => {
   };
 
   const handleCalculate = () => {
-    // 1. Remove tudo que não for número
     const cleanString = studentsInput.replace(/\D/g, '');
     
-    // 2. Converte para número (se vazio, vira 0)
     const numberValue = parseInt(cleanString, 10) || 0;
 
-    // 3. Atualiza o estado do cálculo
     setCalculatedStudents(numberValue);
   };
 
@@ -59,7 +53,6 @@ const Calculator: React.FC = () => {
     return `${formattedInteger},${decimalPart}`;
   };
 
-  // --- CÁLCULOS ---
   const baseCostPerStudent = 31500;
   const totalCost = calculatedStudents * baseCostPerStudent;
 
@@ -158,7 +151,6 @@ const Calculator: React.FC = () => {
           variant="outlined"
         />
 
-        {/* Grupo Input + Botão */}
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'stretch' }}>
             <TextField
             label="Quantidade de Alunos"
@@ -189,7 +181,7 @@ const Calculator: React.FC = () => {
                     fontWeight: 'bold',
                     backgroundColor: PRIMARY_PURPLE,
                     '&:hover': {
-                        backgroundColor: '#7200c9', // Tom mais escuro para o hover
+                        backgroundColor: '#7200c9', 
                     }
                 }}
             >
@@ -219,7 +211,6 @@ const Calculator: React.FC = () => {
 
                 {yearlyPayments.length > 0 ? (
                     <>
-                    {/* Texto com a nova cor */}
                     <Typography
                             variant="body1"
                             sx={{ fontWeight: 'bold', fontSize: '1.8rem', fontFamily: FONT_FAMILY, color: PRIMARY_PURPLE, mb: 2 }} 
@@ -229,13 +220,12 @@ const Calculator: React.FC = () => {
 
                     <Box sx={{
                     mb: 3,
-                    border: `5px solid ${PRIMARY_PURPLE}`, // Borda com a nova cor
+                    border: `5px solid ${PRIMARY_PURPLE}`, 
                     px: 3, 
                     py: 2, 
                     bgcolor: 'background.default',
                     borderRadius: '8px',
                     }}>                
-                    {/* Texto Preto dentro da Box */}
                     <Typography
                             variant="body1"
                             sx={{ fontWeight: 'bold', fontSize: '1.6rem', fontFamily: FONT_FAMILY, color: 'black', mb: 2 }} 
@@ -259,7 +249,6 @@ const Calculator: React.FC = () => {
                 </Typography>
             </>
           ) : (
-             // Estado vazio
              <Box sx={{ textAlign: 'center', py: 4, opacity: 0.6 }}>
                 <Typography variant="h5" sx={{ fontFamily: FONT_FAMILY }}>
                     Digite a quantidade de alunos e clique em Calcular.
