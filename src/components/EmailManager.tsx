@@ -36,41 +36,43 @@ export const EmailManager: React.FC = () => {
   };
 
   const handleSendPDF = async () => {
-    const selected = emails.filter(e => e.is_selected).map(e => e.email);
-    if (selected.length === 0) {
-      toast.warn("Selecione ao menos um destinatário!");
-      return;
+  const selected = emails.filter(e => e.is_selected).map(e => e.email);
+  if (selected.length === 0) return toast.warn("Selecione um destinatário!");
+
+  setLoading(true);
+
+  try {
+    // Gerando um PDF extremamente leve (apenas texto)
+    const pdf = new jsPDF();
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(20);
+    pdf.text("ORÇAMENTO - TESTE PDF ENVIO", 20, 30);
+    
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(12);
+    pdf.text("Este é um documento de teste simplificado.", 20, 50);
+    pdf.text(`Gerado em: ${new Date().toLocaleString()}`, 20, 60);
+
+    // Converte para string Base64 curta
+    const pdfBase64 = pdf.output('datauristring');
+
+    const res = await fetch(`${API_URL}/send-budget`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pdfBase64, recipients: selected }),
+    });
+
+    if (res.ok) {
+      toast.success("E-mail enviado instantaneamente!");
+    } else {
+      toast.error("Erro ao processar envio.");
     }
-
-    setLoading(true);
-    const area = document.getElementById('capture-area');
-    if (!area) return;
-
-    try {
-      const canvas = await html2canvas(area, { scale: 2 });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      const pdfBase64 = pdf.output('datauristring');
-
-      const res = await fetch(`${API_URL}/send-budget`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pdfBase64, recipients: selected }),
-      });
-
-      if (res.ok) toast.success("Orçamento enviado com sucesso!");
-      else toast.error("Falha ao enviar e-mail.");
-    } catch {
-      toast.error("Erro ao gerar ou enviar o PDF.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (err) {
+    toast.error("Erro na conexão.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <Box sx={{ mt: 3, p: 2, borderTop: '1px dashed #ccc' }}>
