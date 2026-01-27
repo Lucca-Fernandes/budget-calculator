@@ -16,6 +16,7 @@ interface Props {
   primaryColor: string;
 }
 
+
 export const BudgetResult: React.FC<Props> = ({
   calculatedStudents, entryFee, deliveryFee, monthlyPayment, totalMonthlyParcels, yearlyPayments, totalCost, formatNumber, fontFamily, primaryColor
 }) => {
