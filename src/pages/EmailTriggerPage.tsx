@@ -11,15 +11,29 @@ const EmailTriggerPage: React.FC = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 5, minHeight: '100vh' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 6 }}>
+      
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          mb: 6,
+          position: 'relative' 
+        }}
+      >
         <Box sx={{ width: '450px' }}>
             <img src={logo} alt="Logo" style={{ width: '100%', height: 'auto' }} />
         </Box>
+
         <Button 
           variant="outlined" 
           color="error" 
           onClick={handleLogout}
-          sx={{ fontFamily: 'Conthrax' }}
+          sx={{ 
+            fontFamily: 'Conthrax',
+            position: 'absolute', 
+            right: 0 
+          }}
         >
           Sair
         </Button>

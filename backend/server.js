@@ -3,7 +3,7 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
-const jwt = require('jsonwebtoken'); // Importação do JWT
+const jwt = require('jsonwebtoken'); 
 
 const app = express();
 app.use(cors());
@@ -13,17 +13,21 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, 
   auth: {
-    user: process.env.EMAIL_USER, 
-    pass: process.env.EMAIL_PASS  
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  },
+  tls: {
+    rejectUnauthorized: false 
   }
 });
 
-// --- MIDDLEWARE DE PROTEÇÃO ---
-// Esta função verifica se o token enviado no cabeçalho é válido antes de prosseguir
+
 const verifyJWT = (req, res, next) => {
-  const token = req.headers['authorization']?.split(' ')[1]; // Pega o token após o "Bearer"
+  const token = req.headers['authorization']?.split(' ')[1]; 
 
   if (!token) {
     return res.status(403).json({ success: false, message: "Token não fornecido" });
@@ -33,18 +37,16 @@ const verifyJWT = (req, res, next) => {
     if (err) {
       return res.status(401).json({ success: false, message: "Sessão expirada ou inválida" });
     }
-    req.user = decoded; // Salva os dados do usuário na requisição
+    req.user = decoded; 
     next();
   });
 };
 
-// --- ROTA DE LOGIN (GERA O JWT) ---
 
 app.post('/api/login', (req, res) => {
   const { user, pass } = req.body;
 
   if (user === process.env.VITE_AUTH_USER && pass === process.env.VITE_AUTH_PASS) {
-    // Cria um token que expira em 2 horas
     const token = jwt.sign({ user: user }, process.env.JWT_SECRET, { expiresIn: '2h' });
     
     return res.json({ 
@@ -56,7 +58,6 @@ app.post('/api/login', (req, res) => {
   res.status(401).json({ success: false, message: "Acesso negado" });
 });
 
-// --- ROTAS PROTEGIDAS (Adicionado verifyJWT) ---
 
 app.get('/emails', verifyJWT, async (req, res) => {
   try {

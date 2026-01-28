@@ -19,7 +19,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/login', {
+      const response = await fetch('https://budget-calculator-zntc.onrender.com/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user, pass })

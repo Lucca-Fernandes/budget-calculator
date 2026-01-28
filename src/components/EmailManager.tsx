@@ -6,16 +6,16 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import jsPDF from 'jspdf';
 
-const API_URL = 'http://localhost:3001';
+const API_URL = 'https://budget-calculator-zntc.onrender.com';
 
-// Função auxiliar para pegar o token
+
 const getAuthHeader = () => ({
   'Authorization': `Bearer ${localStorage.getItem('@BudgetApp:token')}`,
   'Content-Type': 'application/json'
 });
 
 export const EmailManager: React.FC = () => {
-  const [emails, setEmails] = useState<any[]>([]); // Inicializado como array vazio
+  const [emails, setEmails] = useState<any[]>([]); //
   const [newEmail, setNewEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +29,7 @@ export const EmailManager: React.FC = () => {
         return;
       }
       const data = await r.json();
-      // Garante que o estado sempre receba um array
+      
       setEmails(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
@@ -91,7 +91,6 @@ export const EmailManager: React.FC = () => {
       </Box>
 
       <List sx={{ maxHeight: 200, overflow: 'auto', bgcolor: '#f5f5f5', borderRadius: 1 }}>
-        {/* O uso do opcional chaining ?. e a garantia de array acima previne o erro do map */}
         {emails && emails.length > 0 ? emails.map(e => (
           <ListItem key={e.id} divider>
             <Checkbox 

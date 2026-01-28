@@ -5,7 +5,7 @@ import { CssBaseline } from '@mui/material';
 const appTheme = createTheme({
   palette: {
     primary: {
-      main: '#9100ff', // Ajustado para o roxo do seu projeto
+      main: '#9100ff', 
     },
     background: {
       default: '#f5f5f5',
