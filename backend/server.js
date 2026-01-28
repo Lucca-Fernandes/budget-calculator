@@ -13,18 +13,18 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
+  host: "smtp.gmail.com",
   port: 465,
   secure: true, 
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    pass: process.env.EMAIL_PASS,
   },
+  connectionTimeout: 10000, 
   tls: {
     rejectUnauthorized: false 
   }
 });
-
 
 const verifyJWT = (req, res, next) => {
   const token = req.headers['authorization']?.split(' ')[1]; 
