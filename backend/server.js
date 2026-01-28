@@ -13,7 +13,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
+  host: "gmail.com",
   port: 465,
   secure: true, 
   auth: {
