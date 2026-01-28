@@ -1,78 +1,79 @@
 import React, { useState, useEffect } from 'react';
-import { Box, TextField, Button, Typography, Checkbox, IconButton, List, ListItem, ListItemText, ListItemSecondaryAction } from '@mui/material';
+import { Box, TextField, Button, Typography, Checkbox, IconButton, List, ListItem, ListItemText } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css'; 
+import 'react-toastify/dist/ReactToastify.css';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 const API_URL = 'http://localhost:3001';
 
+// Função auxiliar para pegar o token
+const getAuthHeader = () => ({
+  'Authorization': `Bearer ${localStorage.getItem('@BudgetApp:token')}`,
+  'Content-Type': 'application/json'
+});
+
 export const EmailManager: React.FC = () => {
-  const [emails, setEmails] = useState<any[]>([]);
+  const [emails, setEmails] = useState<any[]>([]); // Inicializado como array vazio
   const [newEmail, setNewEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const fetchEmails = () => fetch(`${API_URL}/emails`).then(r => r.json()).then(setEmails);
+  const fetchEmails = async () => {
+    try {
+      const r = await fetch(`${API_URL}/emails`, {
+        headers: getAuthHeader()
+      });
+      if (r.status === 403 || r.status === 401) {
+        toast.error("Sessão expirada. Faça login novamente.");
+        return;
+      }
+      const data = await r.json();
+      // Garante que o estado sempre receba um array
+      setEmails(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      setEmails([]);
+    }
+  };
+
   useEffect(() => { fetchEmails(); }, []);
 
   const handleAddEmail = async () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(newEmail)) {
-      toast.error("Por favor, insira um e-mail válido!");
-      return;
-    }
+    if (!newEmail) return;
     try {
       await fetch(`${API_URL}/emails`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeader(),
         body: JSON.stringify({ email: newEmail }),
       });
       setNewEmail('');
       fetchEmails();
-      toast.success("E-mail adicionado à lista!");
-    } catch { toast.error("Erro ao salvar e-mail."); }
+      toast.success("E-mail adicionado!");
+    } catch { toast.error("Erro ao salvar."); }
   };
 
   const handleSendPDF = async () => {
-  const selected = emails.filter(e => e.is_selected).map(e => e.email);
-  if (selected.length === 0) return toast.warn("Selecione um destinatário!");
+    const selected = emails.filter(e => e.is_selected).map(e => e.email);
+    if (selected.length === 0) return toast.warn("Selecione um destinatário!");
 
-  setLoading(true);
+    setLoading(true);
+    try {
+      const pdf = new jsPDF();
+      pdf.text("ORÇAMENTO - TESTE PDF ENVIO", 20, 30);
+      const pdfBase64 = pdf.output('datauristring');
 
-  try {
-    // Gerando um PDF extremamente leve (apenas texto)
-    const pdf = new jsPDF();
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(20);
-    pdf.text("ORÇAMENTO - TESTE PDF ENVIO", 20, 30);
-    
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(12);
-    pdf.text("Este é um documento de teste simplificado.", 20, 50);
-    pdf.text(`Gerado em: ${new Date().toLocaleString()}`, 20, 60);
+      const res = await fetch(`${API_URL}/send-budget`, {
+        method: 'POST',
+        headers: getAuthHeader(),
+        body: JSON.stringify({ pdfBase64, recipients: selected }),
+      });
 
-    // Converte para string Base64 curta
-    const pdfBase64 = pdf.output('datauristring');
-
-    const res = await fetch(`${API_URL}/send-budget`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pdfBase64, recipients: selected }),
-    });
-
-    if (res.ok) {
-      toast.success("E-mail enviado instantaneamente!");
-    } else {
-      toast.error("Erro ao processar envio.");
-    }
-  } catch (err) {
-    toast.error("Erro na conexão.");
-  } finally {
-    setLoading(false);
-  }
-};
+      if (res.ok) toast.success("Enviado com sucesso!");
+      else toast.error("Erro no envio.");
+    } catch { toast.error("Falha na conexão."); }
+    finally { setLoading(false); }
+  };
 
   return (
     <Box sx={{ mt: 3, p: 2, borderTop: '1px dashed #ccc' }}>
@@ -82,23 +83,23 @@ export const EmailManager: React.FC = () => {
       <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
         <TextField 
           fullWidth size="small" 
-          placeholder="email@exemplo.com" 
           value={newEmail} 
           onChange={e => setNewEmail(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleAddEmail()}
+          placeholder="email@exemplo.com"
         />
         <Button variant="contained" onClick={handleAddEmail} sx={{ bgcolor: '#9100ff' }}><AddIcon /></Button>
       </Box>
 
       <List sx={{ maxHeight: 200, overflow: 'auto', bgcolor: '#f5f5f5', borderRadius: 1 }}>
-        {emails.map(e => (
+        {/* O uso do opcional chaining ?. e a garantia de array acima previne o erro do map */}
+        {emails && emails.length > 0 ? emails.map(e => (
           <ListItem key={e.id} divider>
             <Checkbox 
               checked={e.is_selected} 
               onChange={async () => {
                 await fetch(`${API_URL}/emails/${e.id}`, { 
                   method: 'PATCH', 
-                  headers: {'Content-Type': 'application/json'}, 
+                  headers: getAuthHeader(), 
                   body: JSON.stringify({is_selected: !e.is_selected}) 
                 });
                 fetchEmails();
@@ -106,21 +107,25 @@ export const EmailManager: React.FC = () => {
             />
             <ListItemText primary={e.email} />
             <IconButton onClick={async () => {
-              await fetch(`${API_URL}/emails/${e.id}`, { method: 'DELETE' });
+              await fetch(`${API_URL}/emails/${e.id}`, { 
+                method: 'DELETE',
+                headers: getAuthHeader()
+              });
               fetchEmails();
-              toast.info("E-mail removido.");
             }}><DeleteIcon sx={{ color: 'red' }} /></IconButton>
           </ListItem>
-        ))}
+        )) : (
+          <Typography sx={{ p: 2, textAlign: 'center', color: '#666' }}>Nenhum e-mail cadastrado.</Typography>
+        )}
       </List>
 
       <Button 
         fullWidth variant="contained" 
-        disabled={loading || emails.filter(e => e.is_selected).length === 0} 
+        disabled={loading || emails.length === 0} 
         onClick={handleSendPDF} 
-        sx={{ mt: 2, bgcolor: '#9100ff', py: 1.5, fontWeight: 'bold' }}
+        sx={{ mt: 2, bgcolor: '#9100ff', py: 1.5 }}
       >
-        {loading ? "PROCESSANDO..." : "GERAR E ENVIAR PDF"}
+        {loading ? "ENVIANDO..." : "ENVIAR TESTE PDF"}
       </Button>
     </Box>
   );

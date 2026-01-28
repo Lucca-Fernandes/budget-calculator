@@ -1,11 +1,11 @@
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import EmailTriggerPage from './pages/EmailTriggerPage';
-
+import { AppRoutes } from './routes/AppRoutes';
+import { CssBaseline } from '@mui/material';
 
 const appTheme = createTheme({
   palette: {
     primary: {
-      main: '#1976d2',
+      main: '#9100ff', // Ajustado para o roxo do seu projeto
     },
     background: {
       default: '#f5f5f5',
@@ -30,7 +30,8 @@ const appTheme = createTheme({
 function App() {
   return (
     <ThemeProvider theme={appTheme}>
-      <EmailTriggerPage/>
+      <CssBaseline />
+      <AppRoutes />
     </ThemeProvider>
   );
 }

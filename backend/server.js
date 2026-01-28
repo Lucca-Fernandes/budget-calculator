@@ -3,6 +3,7 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
+const jwt = require('jsonwebtoken'); // Importação do JWT
 
 const app = express();
 app.use(cors());
@@ -19,30 +20,84 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-app.get('/emails', async (req, res) => {
-  const result = await pool.query('SELECT * FROM contact_emails ORDER BY created_at DESC');
-  res.json(result.rows);
+// --- MIDDLEWARE DE PROTEÇÃO ---
+// Esta função verifica se o token enviado no cabeçalho é válido antes de prosseguir
+const verifyJWT = (req, res, next) => {
+  const token = req.headers['authorization']?.split(' ')[1]; // Pega o token após o "Bearer"
+
+  if (!token) {
+    return res.status(403).json({ success: false, message: "Token não fornecido" });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ success: false, message: "Sessão expirada ou inválida" });
+    }
+    req.user = decoded; // Salva os dados do usuário na requisição
+    next();
+  });
+};
+
+// --- ROTA DE LOGIN (GERA O JWT) ---
+
+app.post('/api/login', (req, res) => {
+  const { user, pass } = req.body;
+
+  if (user === process.env.VITE_AUTH_USER && pass === process.env.VITE_AUTH_PASS) {
+    // Cria um token que expira em 2 horas
+    const token = jwt.sign({ user: user }, process.env.JWT_SECRET, { expiresIn: '2h' });
+    
+    return res.json({ 
+      success: true, 
+      token: token 
+    });
+  }
+
+  res.status(401).json({ success: false, message: "Acesso negado" });
 });
 
-app.post('/emails', async (req, res) => {
+// --- ROTAS PROTEGIDAS (Adicionado verifyJWT) ---
+
+app.get('/emails', verifyJWT, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM contact_emails ORDER BY created_at DESC');
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/emails', verifyJWT, async (req, res) => {
   const { email } = req.body;
-  const result = await pool.query('INSERT INTO contact_emails (email, is_selected) VALUES ($1, true) RETURNING *', [email]);
-  res.json(result.rows[0]);
+  try {
+    const result = await pool.query('INSERT INTO contact_emails (email, is_selected) VALUES ($1, true) RETURNING *', [email]);
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-app.patch('/emails/:id', async (req, res) => {
+app.patch('/emails/:id', verifyJWT, async (req, res) => {
   const { id } = req.params;
   const { is_selected } = req.body;
-  const result = await pool.query('UPDATE contact_emails SET is_selected = $1 WHERE id = $2 RETURNING *', [is_selected, id]);
-  res.json(result.rows[0]);
+  try {
+    const result = await pool.query('UPDATE contact_emails SET is_selected = $1 WHERE id = $2 RETURNING *', [is_selected, id]);
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-app.delete('/emails/:id', async (req, res) => {
-  await pool.query('DELETE FROM contact_emails WHERE id = $1', [req.params.id]);
-  res.json({ message: 'Removido' });
+app.delete('/emails/:id', verifyJWT, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM contact_emails WHERE id = $1', [req.params.id]);
+    res.json({ message: 'Removido' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-app.post('/send-budget', async (req, res) => {
+app.post('/send-budget', verifyJWT, async (req, res) => {
   const { pdfBase64, recipients } = req.body;
 
   const mailOptions = {
@@ -68,4 +123,4 @@ app.post('/send-budget', async (req, res) => {
   }
 });
 
-app.listen(3001, () => console.log('Servidor rodando na porta 3001'));
+app.listen(3001, () => console.log('Servidor rodando na porta 3001 com JWT ativo'));

@@ -7,7 +7,11 @@ import { EmailManager } from './EmailManager';
 const FONT_FAMILY = 'Conthrax, Arial, sans-serif';
 const PRIMARY_PURPLE = '#9100ff';
 
-const BudgetCalculator: React.FC = () => {
+interface BudgetCalculatorProps {
+  showEmailTrigger?: boolean;
+}
+
+const BudgetCalculator: React.FC<BudgetCalculatorProps> = ({ showEmailTrigger = false }) => {
   const [studentsInput, setStudentsInput] = useState<string>('');
   const [calculatedStudents, setCalculatedStudents] = useState<number>(0);
   const [currentDate, setCurrentDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -81,7 +85,7 @@ const BudgetCalculator: React.FC = () => {
           />
         </Paper>
       </div>
-      {calculatedStudents > 0 && <EmailManager />}
+      {calculatedStudents > 0 && showEmailTrigger && <EmailManager />}
     </Box>
   );
 };
