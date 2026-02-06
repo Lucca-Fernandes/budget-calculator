@@ -117,10 +117,13 @@ app.post('/send-budget', verifyJWT, async (req, res) => {
 
   try {
     await transporter.sendMail(mailOptions);
-    res.json({ success: true, message: 'Emails enviados!' });
+    res.json({ success: true });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Falha ao enviar e-mail' });
+    console.error("ERRO DETALHADO NO NODEMAILER:", error);
+    res.status(500).json({ 
+      error: 'Falha ao enviar e-mail', 
+      details: error.message 
+    });
   }
 });
 
