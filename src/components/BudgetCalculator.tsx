@@ -85,7 +85,18 @@ const BudgetCalculator: React.FC<BudgetCalculatorProps> = ({ showEmailTrigger = 
           />
         </Paper>
       </div>
-      {calculatedStudents > 0 && showEmailTrigger && <EmailManager />}
+      {calculatedStudents > 0 && showEmailTrigger && (
+        <EmailManager 
+          calculatedStudents={calculatedStudents}
+          totalCost={totalCost}
+          entryFee={entryFee}
+          deliveryFee={deliveryFee}
+          monthlyPayment={monthlyPayment}
+          totalMonthlyParcels={totalMonthlyParcels}
+          yearlyPayments={yearlyPayments}
+          formatNumber={formatNumber}
+        />
+      )}
     </Box>
   );
 };
