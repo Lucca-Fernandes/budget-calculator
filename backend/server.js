@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
-const { Resend } = require('resend'); // Substituído Nodemailer por Resend
+const { Resend } = require('resend'); 
 const jwt = require('jsonwebtoken');
 
 const app = express();
@@ -10,16 +10,13 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Conexão com Banco de Dados (Neon/Postgres)
 const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false } // Garante conexão SSL com Neon
+  ssl: { rejectUnauthorized: false } 
 });
 
-// Inicialização do Resend
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Middleware de Autenticação JWT
 const verifyJWT = (req, res, next) => {
   const token = req.headers['authorization']?.split(' ')[1];
 
@@ -36,7 +33,6 @@ const verifyJWT = (req, res, next) => {
   });
 };
 
-// --- ROTA DE LOGIN ---
 app.post('/api/login', (req, res) => {
   const { user, pass } = req.body;
 
@@ -48,7 +44,6 @@ app.post('/api/login', (req, res) => {
   res.status(401).json({ success: false, message: "Acesso negado" });
 });
 
-// --- CRUD DE EMAILS (PROTEGIDO) ---
 
 app.get('/emails', verifyJWT, async (req, res) => {
   try {
@@ -89,16 +84,14 @@ app.delete('/emails/:id', verifyJWT, async (req, res) => {
   }
 });
 
-// --- ROTA DE DISPARO DE ORÇAMENTO (ATUALIZADA PARA RESEND) ---
 app.post('/send-budget', verifyJWT, async (req, res) => {
   const { pdfBase64, recipients } = req.body;
 
   try {
-    // Nota: Se não tiver domínio próprio configurado no Resend, 
-    // use 'onboarding@resend.dev' como remetente.
+  
     const { data, error } = await resend.emails.send({
       from: 'Orcamento <onboarding@resend.dev>', 
-      to: recipients, // Resend aceita o array ['email1', 'email2'] diretamente
+      to: recipients, 
       subject: 'Orçamento - Teste de Envio',
       html: '<strong>Olá!</strong><p>Segue em anexo o PDF solicitado: TESTANDO ENVIO.</p>',
       attachments: [
