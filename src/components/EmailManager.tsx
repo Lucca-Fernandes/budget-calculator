@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Box, TextField, Button, Typography, Checkbox, IconButton, List, ListItem, ListItemText, Paper } from '@mui/material';
+import { 
+  Box, TextField, Button, Typography, Checkbox, IconButton, 
+  List, ListItem, ListItemText, Paper, Dialog, DialogTitle, 
+  DialogContent, DialogActions 
+} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import SendIcon from '@mui/icons-material/Send';
@@ -9,7 +13,6 @@ import autoTable from 'jspdf-autotable';
 
 const API_URL = 'https://budget-calculator-zntc.onrender.com';
 
-// Interface para receber os dados da calculadora
 interface EmailManagerProps {
   calculatedStudents: number;
   totalCost: number;
@@ -22,18 +25,16 @@ interface EmailManagerProps {
 }
 
 export const EmailManager: React.FC<EmailManagerProps> = ({
-  calculatedStudents,
-  totalCost,
-  entryFee,
-  deliveryFee,
-  monthlyPayment,
-  totalMonthlyParcels,
-  yearlyPayments,
-  formatNumber
+  calculatedStudents, totalCost, entryFee, deliveryFee, 
+  monthlyPayment, totalMonthlyParcels, yearlyPayments, formatNumber
 }) => {
   const [emails, setEmails] = useState<any[]>([]);
   const [newEmail, setNewEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Estado para o Popup da Cidade
+  const [openCityPopup, setOpenCityPopup] = useState(false);
+  const [cityName, setCityName] = useState('');
 
   const getAuthHeader = () => ({
     'Authorization': `Bearer ${localStorage.getItem('@BudgetApp:token')}`,
@@ -45,109 +46,118 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       const r = await fetch(`${API_URL}/emails`, { headers: getAuthHeader() });
       const data = await r.json();
       setEmails(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setEmails([]);
-    }
+    } catch (err) { setEmails([]); }
   };
 
   useEffect(() => { fetchEmails(); }, []);
 
-  const handleAddEmail = async () => {
-    if (!newEmail || !newEmail.includes('@')) return toast.error("E-mail inválido");
-    try {
-      await fetch(`${API_URL}/emails`, {
-        method: 'POST',
-        headers: getAuthHeader(),
-        body: JSON.stringify({ email: newEmail }),
-      });
-      setNewEmail('');
-      fetchEmails();
-      toast.success("E-mail adicionado!");
-    } catch { toast.error("Erro ao salvar."); }
+  // 1. Aciona o Popup antes de gerar o PDF
+  const triggerCityPopup = () => {
+    const selected = emails.filter(e => e.is_selected);
+    if (selected.length === 0) return toast.warn("Selecione os destinatários!");
+    setOpenCityPopup(true);
   };
 
-  const handleSendPDF = async () => {
-    const selected = emails.filter(e => e.is_selected).map(e => e.email);
-    if (selected.length === 0) return toast.warn("Selecione ao menos um destinatário!");
-
+  // 2. Gera o PDF Institucional com os dados e a Cidade
+  const generateAndSendPDF = async () => {
+    setOpenCityPopup(false);
     setLoading(true);
+    
     try {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const PURPLE: [number, number, number] = [145, 0, 255];
+      const GREY: [number, number, number] = [80, 80, 80];
 
-      // --- DESIGN DO PDF (ESTILO PRODEMGE/INSTITUCIONAL) ---
-      
-      // Cabeçalho Roxo
-      doc.setFillColor(145, 0, 255); 
-      doc.rect(0, 0, pageWidth, 40, 'F');
-      
-      doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(20);
-      doc.text("PROPOSTA DE INVESTIMENTO", 15, 25);
-      
-      // Detalhes da Proposta
-      doc.setTextColor(40, 40, 40);
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 15, 50);
-      doc.text(`Projeto: Modernização Tecnológica Educacional`, 15, 55);
+      const addLayout = (pageNum: number) => {
+        doc.setFillColor(PURPLE[0], PURPLE[1], PURPLE[2]);
+        doc.rect(0, 0, 4, pageHeight, 'F'); // Borda lateral esquerda
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(`PRODEMGE DESENVOLVE | ${cityName.toUpperCase()}`, 10, pageHeight - 10);
+        doc.text(`${pageNum}`, pageWidth - 15, pageHeight - 10);
+      };
 
-      // Tabela Principal de Valores
-      autoTable(doc, {
-        startY: 65,
-        head: [['Descrição do Item', 'Quantidade / Parcelas', 'Valor Total (R$)']],
-        body: [
-          ['Total de Alunos Calculados', `${calculatedStudents}`, '-'],
-          ['Valor de Investimento Total', '-', `R$ ${formatNumber(totalCost)}`],
-          ['Entrada (Adesão)', '1x', `R$ ${formatNumber(entryFee)}`],
-          ['Taxa de Entrega / Implantação', '1x', `R$ ${formatNumber(deliveryFee)}`],
-          ['Mensalidades Restantes', `${totalMonthlyParcels}x`, `R$ ${formatNumber(monthlyPayment)}`],
-        ],
-        headStyles: { fillColor: [145, 0, 255], halign: 'center' },
-        columnStyles: { 2: { halign: 'right' } },
-        styles: { font: 'helvetica', fontSize: 10 }
-      });
-
-      // Cronograma por Exercício (Página de Valores)
-      const finalY = (doc as any).lastAutoTable.finalY || 120;
+      // --- PÁGINA 1: CAPA ---
+      addLayout(1);
+      doc.setFontSize(26);
+      doc.setTextColor(PURPLE[0], PURPLE[1], PURPLE[2]);
+      doc.text("SIMULAÇÃO DE VALORES E", 20, 80);
+      doc.text("COTAÇÃO INICIAL", 20, 92);
+      doc.setFontSize(16);
+      doc.setTextColor(40);
+      doc.text("PROJETO DESENVOLVE – PRODEMGE", 20, 110);
       doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text("Resumo de Desembolso por Exercício", 15, finalY + 15);
+      doc.text(`UNIDADE: ${cityName.toUpperCase()}`, 20, 120);
 
+      // --- PÁGINA 2: CONTEXTUALIZAÇÃO ---
+      doc.addPage();
+      addLayout(2);
+      doc.setFontSize(18); doc.text("Contextualização", 20, 30);
+      doc.setFontSize(11);
+      const ctxText = "O PRODEMGE DESENVOLVE é um programa de governo estratégico, voltado para o Desenvolvimento Econômico e a Transformação Social dos municípios mineiros.";
+      doc.text(doc.splitTextToSize(ctxText, pageWidth - 40), 20, 45);
+
+      // --- PÁGINA 3 A 7: (PULADO PARA EXEMPLO, SEGUE PADRÃO) ---
+      for(let i=3; i<=7; i++) {
+        doc.addPage();
+        addLayout(i);
+        doc.text(`Conteúdo Institucional - Página ${i}`, 20, 30);
+      }
+
+      // --- PÁGINA 8-9: REMOVIDAS CONFORME SOLICITADO ---
+
+      // --- PÁGINA 10 (Agora página 8): VALORES DINÂMICOS ---
+      doc.addPage();
+      addLayout(8);
+      doc.setFontSize(18); doc.text("Dimensionamento Financeiro", 20, 30);
+      
       autoTable(doc, {
-        startY: finalY + 20,
-        head: [['Ano Exercício', 'Nº de Meses', 'Valor Total do Ano (R$)']],
-        body: yearlyPayments.map(p => [
-          p.year.toString(),
-          `${p.months} meses`,
-          `R$ ${formatNumber(p.total)}`
-        ]),
-        headStyles: { fillColor: [80, 80, 80], halign: 'center' },
-        columnStyles: { 2: { halign: 'right' } },
-        theme: 'grid'
+        startY: 45,
+        head: [['Descrição', 'Ref/Qtd', 'Total (R$)']],
+        body: [
+          ['Alunos Beneficiados', `${calculatedStudents}`, '-'],
+          ['Investimento Total', '-', `R$ ${formatNumber(totalCost)}`],
+          ['Adesão (Entrada)', '1x', `R$ ${formatNumber(entryFee)}`],
+          ['Implantação', '1x', `R$ ${formatNumber(deliveryFee)}`],
+          ['Mensalidade', `${totalMonthlyParcels}x`, `R$ ${formatNumber(monthlyPayment)}`],
+        ],
+        headStyles: { fillColor: PURPLE }
       });
 
-      // Rodapé
+      // Cronograma Anual
+      const finalY = (doc as any).lastAutoTable.finalY + 15;
+      autoTable(doc, {
+        startY: finalY,
+        head: [['Ano Exercício', 'Meses', 'Subtotal (R$)']],
+        body: yearlyPayments.map(p => [p.year, p.months, `R$ ${formatNumber(p.total)}`]),
+        headStyles: { fillColor: GREY }
+      });
+
+      doc.addPage();
+      addLayout(9);
+      doc.setFontSize(14); doc.text("Nota Jurídica", 20, 30);
       doc.setFontSize(9);
-      doc.setTextColor(150, 150, 150);
-      doc.text("Documento gerado automaticamente pelo sistema de orçamentos.", 15, 285);
+      doc.text("Este documento possui caráter meramente informativo e não gera obrigações contratuais.", 20, 45);
 
       const pdfBase64 = doc.output('datauristring');
 
-      // Envio via API (Resend no Backend)
+      // 3. Disparo para o Backend
       const res = await fetch(`${API_URL}/send-budget`, {
         method: 'POST',
         headers: getAuthHeader(),
-        body: JSON.stringify({ pdfBase64, recipients: selected }),
+        body: JSON.stringify({ 
+          pdfBase64, 
+          recipients: emails.filter(e => e.is_selected).map(e => e.email) 
+        }),
       });
 
-      if (res.ok) toast.success("E-mail enviado com sucesso!");
-      else toast.error("Erro no servidor de e-mail.");
+      if (res.ok) toast.success("Orçamento enviado para " + cityName);
+      else toast.error("Erro no envio.");
 
     } catch (err) {
-      console.error(err);
-      toast.error("Erro ao gerar ou enviar PDF.");
+      toast.error("Erro ao gerar PDF.");
     } finally {
       setLoading(false);
     }
@@ -155,57 +165,67 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
 
   return (
     <Paper elevation={4} sx={{ mt: 4, p: 3, borderRadius: 2, borderTop: '4px solid #9100ff' }}>
-      <ToastContainer position="top-right" autoClose={3000} />
-      <Typography variant="h6" sx={{ mb: 2, fontFamily: 'Conthrax', color: '#333' }}>
-        Disparo de Orçamento
-      </Typography>
+      <ToastContainer position="top-right" />
+      
+      {/* POPUP DE CONFIRMAÇÃO DA CIDADE */}
+      <Dialog open={openCityPopup} onClose={() => setOpenCityPopup(false)}>
+        <DialogTitle sx={{ fontFamily: 'Conthrax' }}>Confirmar Destino</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Para gerar o PDF institucional, informe o nome da cidade:
+          </Typography>
+          <TextField
+            autoFocus fullWidth label="Nome da Cidade"
+            value={cityName} onChange={(e) => setCityName(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenCityPopup(false)}>Cancelar</Button>
+          <Button 
+            onClick={generateAndSendPDF} 
+            variant="contained" 
+            disabled={!cityName}
+            sx={{ bgcolor: '#9100ff' }}
+          >
+            Confirmar e Enviar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Typography variant="h6" sx={{ mb: 2, fontFamily: 'Conthrax' }}>Gestão de Disparo</Typography>
       
       <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
-        <TextField 
-          fullWidth size="small" 
-          label="Novo e-mail de destino"
-          value={newEmail} 
-          onChange={e => setNewEmail(e.target.value)}
-        />
-        <Button variant="contained" onClick={handleAddEmail} sx={{ bgcolor: '#9100ff' }}>
-          <AddIcon />
-        </Button>
+        <TextField fullWidth size="small" label="Adicionar E-mail" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
+        <Button variant="contained" onClick={async () => {
+          await fetch(`${API_URL}/emails`, { method: 'POST', headers: getAuthHeader(), body: JSON.stringify({ email: newEmail }) });
+          setNewEmail(''); fetchEmails();
+        }} sx={{ bgcolor: '#9100ff' }}><AddIcon /></Button>
       </Box>
 
-      <Typography variant="subtitle2" sx={{ mb: 1, color: '#666' }}>Selecione os destinatários:</Typography>
-      <List sx={{ maxHeight: 200, overflow: 'auto', bgcolor: '#fafafa', borderRadius: 1, border: '1px solid #eee' }}>
-        {emails.length > 0 ? emails.map(e => (
-          <ListItem key={e.id} divider sx={{ py: 0 }}>
-            <Checkbox 
-              checked={e.is_selected} 
-              onChange={async () => {
-                await fetch(`${API_URL}/emails/${e.id}`, { 
-                  method: 'PATCH', 
-                  headers: getAuthHeader(), 
-                  body: JSON.stringify({is_selected: !e.is_selected}) 
-                });
-                fetchEmails();
-              }} 
-            />
+      <List sx={{ maxHeight: 150, overflow: 'auto', mb: 2, border: '1px solid #eee' }}>
+        {emails.map(e => (
+          <ListItem key={e.id} sx={{ py: 0 }}>
+            <Checkbox checked={e.is_selected} onChange={async () => {
+               await fetch(`${API_URL}/emails/${e.id}`, { method: 'PATCH', headers: getAuthHeader(), body: JSON.stringify({is_selected: !e.is_selected}) });
+               fetchEmails();
+            }} />
             <ListItemText primary={e.email} />
             <IconButton onClick={async () => {
               await fetch(`${API_URL}/emails/${e.id}`, { method: 'DELETE', headers: getAuthHeader() });
               fetchEmails();
             }}><DeleteIcon color="error" /></IconButton>
           </ListItem>
-        )) : (
-          <Typography sx={{ p: 2, textAlign: 'center', color: '#999' }}>Nenhum e-mail disponível.</Typography>
-        )}
+        ))}
       </List>
 
       <Button 
         fullWidth variant="contained" 
         disabled={loading || emails.filter(e => e.is_selected).length === 0} 
-        onClick={handleSendPDF} 
+        onClick={triggerCityPopup}
         startIcon={<SendIcon />}
-        sx={{ mt: 3, bgcolor: '#9100ff', py: 1.5, fontWeight: 'bold' }}
+        sx={{ bgcolor: '#9100ff', py: 2, fontWeight: 'bold' }}
       >
-        {loading ? "ENVIANDO..." : "ENVIAR ORÇAMENTO POR E-MAIL"}
+        {loading ? "PROCESSANDO..." : "ENVIAR PROPOSTA INSTITUCIONAL"}
       </Button>
     </Paper>
   );
