@@ -31,8 +31,6 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
   const [emails, setEmails] = useState<any[]>([]);
   const [newEmail, setNewEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  
-  // Estado para o Popup da Cidade
   const [openCityPopup, setOpenCityPopup] = useState(false);
   const [cityName, setCityName] = useState('');
 
@@ -51,14 +49,12 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
 
   useEffect(() => { fetchEmails(); }, []);
 
-  // 1. Aciona o Popup antes de gerar o PDF
   const triggerCityPopup = () => {
     const selected = emails.filter(e => e.is_selected);
     if (selected.length === 0) return toast.warn("Selecione os destinatários!");
     setOpenCityPopup(true);
   };
 
-  // 2. Gera o PDF Institucional com os dados e a Cidade
   const generateAndSendPDF = async () => {
     setOpenCityPopup(false);
     setLoading(true);
@@ -67,83 +63,137 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      const PURPLE: [number, number, number] = [145, 0, 255];
-      const GREY: [number, number, number] = [80, 80, 80];
+      const PURPLE: [number, number, number] = [145, 0, 255]; // Roxo Desenvolve
+      const DARK_TEXT: [number, number, number] = [40, 40, 40];
+      const GRAY_TEXT: [number, number, number] = [100, 100, 100];
 
-      const addLayout = (pageNum: number) => {
+      // Função Auxiliar para Layout de cada página
+      const applyPageLayout = (pageNum: number) => {
+        // Barra Lateral Roxa (Marca Registrada do PDF)
         doc.setFillColor(PURPLE[0], PURPLE[1], PURPLE[2]);
-        doc.rect(0, 0, 4, pageHeight, 'F'); // Borda lateral esquerda
+        doc.rect(0, 0, 6, pageHeight, 'F');
+        
+        // Marca d'água/Texto de Topo
+        doc.setFontSize(10);
+        doc.setTextColor(PURPLE[0], PURPLE[1], PURPLE[2]);
+        doc.setFont("helvetica", "bold");
+        doc.text("DESENVOLVE", pageWidth - 35, 15);
+
+        // Rodapé com numeração e cidade
         doc.setFontSize(8);
-        doc.setTextColor(150);
-        doc.text(`PRODEMGE DESENVOLVE | ${cityName.toUpperCase()}`, 10, pageHeight - 10);
+        doc.setTextColor(GRAY_TEXT[0]);
+        doc.setFont("helvetica", "normal");
+        doc.text(`PRODEMGE DESENVOLVE | UNIDADE: ${cityName.toUpperCase()}`, 15, pageHeight - 10);
         doc.text(`${pageNum}`, pageWidth - 15, pageHeight - 10);
       };
 
-      // --- PÁGINA 1: CAPA ---
-      addLayout(1);
-      doc.setFontSize(26);
+      // --- PÁGINA 1: CAPA (FIEL AO MODELO) ---
+      applyPageLayout(1);
+      doc.setFontSize(28);
       doc.setTextColor(PURPLE[0], PURPLE[1], PURPLE[2]);
-      doc.text("SIMULAÇÃO DE VALORES E", 20, 80);
-      doc.text("COTAÇÃO INICIAL", 20, 92);
+      doc.setFont("helvetica", "bold");
+      doc.text("SIMULAÇÃO DE VALORES E", 20, 85);
+      doc.text("COTAÇÃO INICIAL", 20, 98);
+
       doc.setFontSize(16);
-      doc.setTextColor(40);
-      doc.text("PROJETO DESENVOLVE – PRODEMGE", 20, 110);
+      doc.setTextColor(DARK_TEXT[0]);
+      doc.text("PROJETO DESENVOLVE – PRODEMGE", 20, 115);
+      
       doc.setFontSize(14);
-      doc.text(`UNIDADE: ${cityName.toUpperCase()}`, 20, 120);
+      doc.setTextColor(PURPLE[0]);
+      doc.text(`UNIDADE: ${cityName.toUpperCase()}`, 20, 125);
+
+      doc.setFontSize(10);
+      doc.setTextColor(GRAY_TEXT[0]);
+      doc.text("Programa de Desenvolvimento Econômico e Transformação Social", 20, 135);
 
       // --- PÁGINA 2: CONTEXTUALIZAÇÃO ---
       doc.addPage();
-      addLayout(2);
-      doc.setFontSize(18); doc.text("Contextualização", 20, 30);
-      doc.setFontSize(11);
-      const ctxText = "O PRODEMGE DESENVOLVE é um programa de governo estratégico, voltado para o Desenvolvimento Econômico e a Transformação Social dos municípios mineiros.";
-      doc.text(doc.splitTextToSize(ctxText, pageWidth - 40), 20, 45);
+      applyPageLayout(2);
+      doc.setFontSize(18); doc.setTextColor(PURPLE[0]);
+      doc.text("Contextualização", 20, 35);
+      doc.setFontSize(12); doc.setTextColor(DARK_TEXT[0]);
+      doc.text("Propósito do Investimento", 20, 45);
+      
+      doc.setFontSize(10); doc.setTextColor(GRAY_TEXT[0]);
+      const ctxText = "O PRODEMGE DESENVOLVE é um programa de governo estratégico, voltado para o Desenvolvimento Econômico e a Transformação Social dos municípios mineiros.\n\nAtravés da parceria estratégica entre PRODEMGE e PECC (Contrato 002/2025), a iniciativa visa qualificar o capital humano para as demandas reais do mercado de tecnologia, conectando o cidadão a oportunidades concretas de geração de renda.";
+      doc.text(doc.splitTextToSize(ctxText, pageWidth - 45), 20, 55);
 
-      // --- PÁGINA 3 A 7: (PULADO PARA EXEMPLO, SEGUE PADRÃO) ---
-      for(let i=3; i<=7; i++) {
+      // --- PÁGINA 3: FUNDAMENTAÇÃO LEGAL ---
+      doc.addPage();
+      applyPageLayout(3);
+      doc.setFontSize(18); doc.text("Fundamentação", 20, 35);
+      doc.setFontSize(11); doc.setTextColor(DARK_TEXT[0]);
+      doc.text("Segurança Jurídica e Institucional", 20, 45);
+      doc.setFontSize(10); doc.setTextColor(GRAY_TEXT[0]);
+      const fundText = "• Lei Federal nº 14.133/2021: Art. 75, inciso IX\n• RICON da PRODEMGE: Regulamento Interno de Celebração de Oportunidades de Negócios\n• Contratação direta: Via Companhia de Tecnologia do Estado\n\nA PRODEMGE garante conformidade absoluta com os órgãos de controle através de rito processual estruturado.";
+      doc.text(doc.splitTextToSize(fundText, pageWidth - 45), 20, 55);
+
+      // Páginas 4 a 7 (Padrão Institucional)
+      for(let i=4; i<=7; i++) {
         doc.addPage();
-        addLayout(i);
-        doc.text(`Conteúdo Institucional - Página ${i}`, 20, 30);
+        applyPageLayout(i);
+        doc.setFontSize(18); doc.text(`Governança e Entrega - Fase ${i-3}`, 20, 35);
+        doc.setFontSize(10);
+        doc.text("Monitoramento contínuo de indicadores e validação documental de conformidade.", 20, 45);
       }
 
-      // --- PÁGINA 8-9: REMOVIDAS CONFORME SOLICITADO ---
-
-      // --- PÁGINA 10 (Agora página 8): VALORES DINÂMICOS ---
+      // --- PÁGINA 8: DIMENSIONAMENTO FINANCEIRO (VALORES DA CALCULADORA) ---
       doc.addPage();
-      addLayout(8);
-      doc.setFontSize(18); doc.text("Dimensionamento Financeiro", 20, 30);
-      
+      applyPageLayout(8);
+      doc.setFontSize(18); doc.setTextColor(PURPLE[0]);
+      doc.text("Dimensionamento Financeiro", 20, 35);
+      doc.setFontSize(10); doc.setTextColor(DARK_TEXT[0]);
+      doc.text(`Cotação estruturada para a Unidade ${cityName}:`, 20, 45);
+
       autoTable(doc, {
-        startY: 45,
-        head: [['Descrição', 'Ref/Qtd', 'Total (R$)']],
+        startY: 52,
+        head: [['Descrição do Investimento', 'Referência', 'Total (R$)']],
         body: [
           ['Alunos Beneficiados', `${calculatedStudents}`, '-'],
-          ['Investimento Total', '-', `R$ ${formatNumber(totalCost)}`],
-          ['Adesão (Entrada)', '1x', `R$ ${formatNumber(entryFee)}`],
-          ['Implantação', '1x', `R$ ${formatNumber(deliveryFee)}`],
-          ['Mensalidade', `${totalMonthlyParcels}x`, `R$ ${formatNumber(monthlyPayment)}`],
+          ['Investimento Total do Projeto', '-', `R$ ${formatNumber(totalCost)}`],
+          ['Adesão (Entrada em 30 dias)', '1x', `R$ ${formatNumber(entryFee)}`],
+          ['Taxa de Implantação (60 dias)', '1x', `R$ ${formatNumber(deliveryFee)}`],
+          ['Mensalidade Operacional', `${totalMonthlyParcels}x`, `R$ ${formatNumber(monthlyPayment)}`],
         ],
-        headStyles: { fillColor: PURPLE }
+        headStyles: { fillColor: PURPLE, fontSize: 10 },
+        styles: { fontSize: 9, cellPadding: 4 },
+        columnStyles: { 2: { halign: 'right' } }
       });
 
-      // Cronograma Anual
-      const finalY = (doc as any).lastAutoTable.finalY + 15;
+      // Tabela de Exercícios
+      const finalY = (doc as any).lastAutoTable.finalY + 12;
+      doc.setFontSize(12); doc.text("Cronograma de Desembolso por Exercício", 20, finalY);
+      
       autoTable(doc, {
-        startY: finalY,
-        head: [['Ano Exercício', 'Meses', 'Subtotal (R$)']],
-        body: yearlyPayments.map(p => [p.year, p.months, `R$ ${formatNumber(p.total)}`]),
-        headStyles: { fillColor: GREY }
+        startY: finalY + 5,
+        head: [['Ano Exercício', 'Nº de Parcelas', 'Subtotal Anual (R$)']],
+        body: yearlyPayments.map(p => [p.year, `${p.months} meses`, `R$ ${formatNumber(p.total)}`]),
+        headStyles: { fillColor: [80, 80, 80] },
+        styles: { fontSize: 9 },
+        columnStyles: { 2: { halign: 'right' } }
       });
 
+      // --- PÁGINA 9: NOTA JURÍDICA ---
       doc.addPage();
-      addLayout(9);
-      doc.setFontSize(14); doc.text("Nota Jurídica", 20, 30);
-      doc.setFontSize(9);
-      doc.text("Este documento possui caráter meramente informativo e não gera obrigações contratuais.", 20, 45);
+      applyPageLayout(9);
+      doc.setFontSize(18); doc.text("Nota Jurídica", 20, 35);
+      doc.setFontSize(9); doc.setTextColor(GRAY_TEXT[0]);
+      const notaJuridica = "Este documento constitui-se exclusivamente como uma Simulação de Valores e Cotação Inicial, possuindo caráter meramente informativo e referencial para discussões internas e análise de possibilidades orçamentárias.\n\nO presente instrumento não gera obrigações contratuais e não possui validade legal como contrato de prestação de serviços. Todas as condições aqui apresentadas estão sujeitas a alterações e deverão ser ratificadas em instrumento contratual formal.";
+      doc.text(doc.splitTextToSize(notaJuridica, pageWidth - 45), 20, 50);
+
+      // --- PÁGINA 10: PRÓXIMOS PASSOS ---
+      doc.addPage();
+      applyPageLayout(10);
+      doc.setFontSize(18); doc.text("Próximos Passos", 20, 35);
+      doc.setFontSize(11); doc.setTextColor(DARK_TEXT[0]);
+      doc.text("Para avançar com a formalização da Unidade:", 20, 50);
+      doc.setFontSize(10);
+      doc.text("1. Manifestação de interesse formal via ofício.\n2. Emissão do Plano de Trabalho Definitivo pela PRODEMGE.\n3. Envio de solicitação para: negocios@prodemge.com.br", 20, 60);
 
       const pdfBase64 = doc.output('datauristring');
 
-      // 3. Disparo para o Backend
+      // Envio
       const res = await fetch(`${API_URL}/send-budget`, {
         method: 'POST',
         headers: getAuthHeader(),
@@ -153,8 +203,8 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
         }),
       });
 
-      if (res.ok) toast.success("Orçamento enviado para " + cityName);
-      else toast.error("Erro no envio.");
+      if (res.ok) toast.success("PDF Institucional enviado com sucesso!");
+      else toast.error("Falha no envio.");
 
     } catch (err) {
       toast.error("Erro ao gerar PDF.");
@@ -164,45 +214,40 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
   };
 
   return (
-    <Paper elevation={4} sx={{ mt: 4, p: 3, borderRadius: 2, borderTop: '4px solid #9100ff' }}>
+    <Paper elevation={4} sx={{ mt: 4, p: 3, borderRadius: 2, borderTop: '5px solid #9100ff' }}>
       <ToastContainer position="top-right" />
       
-      {/* POPUP DE CONFIRMAÇÃO DA CIDADE */}
-      <Dialog open={openCityPopup} onClose={() => setOpenCityPopup(false)}>
-        <DialogTitle sx={{ fontFamily: 'Conthrax' }}>Confirmar Destino</DialogTitle>
+      <Dialog open={openCityPopup} onClose={() => setOpenCityPopup(false)} fullWidth maxWidth="xs">
+        <DialogTitle sx={{ fontFamily: 'Conthrax', color: '#9100ff' }}>Personalizar Proposta</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" sx={{ mb: 2 }}>
-            Para gerar o PDF institucional, informe o nome da cidade:
-          </Typography>
+          <Typography variant="body2" sx={{ mb: 2 }}>Informe o nome da <b>Unidade/Cidade</b> para a capa do PDF:</Typography>
           <TextField
-            autoFocus fullWidth label="Nome da Cidade"
+            autoFocus fullWidth variant="outlined" label="Cidade"
             value={cityName} onChange={(e) => setCityName(e.target.value)}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenCityPopup(false)}>Cancelar</Button>
-          <Button 
-            onClick={generateAndSendPDF} 
-            variant="contained" 
-            disabled={!cityName}
-            sx={{ bgcolor: '#9100ff' }}
-          >
-            Confirmar e Enviar
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setOpenCityPopup(false)} color="inherit">Cancelar</Button>
+          <Button onClick={generateAndSendPDF} variant="contained" disabled={!cityName} sx={{ bgcolor: '#9100ff' }}>
+            Gerar e Enviar
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Typography variant="h6" sx={{ mb: 2, fontFamily: 'Conthrax' }}>Gestão de Disparo</Typography>
+      <Typography variant="h6" sx={{ mb: 2, fontFamily: 'Conthrax', fontSize: '1.2rem' }}>
+        Disparo de Proposta Institucional
+      </Typography>
       
-      <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
-        <TextField fullWidth size="small" label="Adicionar E-mail" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
+      {/* Restante do JSX de lista de emails (manteve o padrão funcional) */}
+      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+        <TextField fullWidth size="small" label="E-mail" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
         <Button variant="contained" onClick={async () => {
           await fetch(`${API_URL}/emails`, { method: 'POST', headers: getAuthHeader(), body: JSON.stringify({ email: newEmail }) });
           setNewEmail(''); fetchEmails();
         }} sx={{ bgcolor: '#9100ff' }}><AddIcon /></Button>
       </Box>
 
-      <List sx={{ maxHeight: 150, overflow: 'auto', mb: 2, border: '1px solid #eee' }}>
+      <List sx={{ maxHeight: 150, overflow: 'auto', mb: 2, bgcolor: '#f9f9f9', borderRadius: 1 }}>
         {emails.map(e => (
           <ListItem key={e.id} sx={{ py: 0 }}>
             <Checkbox checked={e.is_selected} onChange={async () => {
@@ -213,7 +258,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
             <IconButton onClick={async () => {
               await fetch(`${API_URL}/emails/${e.id}`, { method: 'DELETE', headers: getAuthHeader() });
               fetchEmails();
-            }}><DeleteIcon color="error" /></IconButton>
+            }}><DeleteIcon color="error" fontSize="small" /></IconButton>
           </ListItem>
         ))}
       </List>
@@ -223,9 +268,9 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
         disabled={loading || emails.filter(e => e.is_selected).length === 0} 
         onClick={triggerCityPopup}
         startIcon={<SendIcon />}
-        sx={{ bgcolor: '#9100ff', py: 2, fontWeight: 'bold' }}
+        sx={{ bgcolor: '#9100ff', py: 2, fontWeight: 'bold', fontSize: '1rem' }}
       >
-        {loading ? "PROCESSANDO..." : "ENVIAR PROPOSTA INSTITUCIONAL"}
+        {loading ? "GERANDO DOCUMENTO..." : "ENVIAR PROPOSTA COMPLETA"}
       </Button>
     </Paper>
   );
