@@ -1,38 +1,51 @@
 import React, { useState, useEffect } from 'react';
-import { Box, TextField, Button, Typography, Checkbox, IconButton, List, ListItem, ListItemText } from '@mui/material';
+import { Box, TextField, Button, Typography, Checkbox, IconButton, List, ListItem, ListItemText, Paper } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import SendIcon from '@mui/icons-material/Send';
 import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const API_URL = 'https://budget-calculator-zntc.onrender.com';
 
+// Interface para receber os dados da calculadora
+interface EmailManagerProps {
+  calculatedStudents: number;
+  totalCost: number;
+  entryFee: number;
+  deliveryFee: number;
+  monthlyPayment: number;
+  totalMonthlyParcels: number;
+  yearlyPayments: any[];
+  formatNumber: (value: number) => string;
+}
 
-const getAuthHeader = () => ({
-  'Authorization': `Bearer ${localStorage.getItem('@BudgetApp:token')}`,
-  'Content-Type': 'application/json'
-});
-
-export const EmailManager: React.FC = () => {
-  const [emails, setEmails] = useState<any[]>([]); //
+export const EmailManager: React.FC<EmailManagerProps> = ({
+  calculatedStudents,
+  totalCost,
+  entryFee,
+  deliveryFee,
+  monthlyPayment,
+  totalMonthlyParcels,
+  yearlyPayments,
+  formatNumber
+}) => {
+  const [emails, setEmails] = useState<any[]>([]);
   const [newEmail, setNewEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const getAuthHeader = () => ({
+    'Authorization': `Bearer ${localStorage.getItem('@BudgetApp:token')}`,
+    'Content-Type': 'application/json'
+  });
+
   const fetchEmails = async () => {
     try {
-      const r = await fetch(`${API_URL}/emails`, {
-        headers: getAuthHeader()
-      });
-      if (r.status === 403 || r.status === 401) {
-        toast.error("Sessão expirada. Faça login novamente.");
-        return;
-      }
+      const r = await fetch(`${API_URL}/emails`, { headers: getAuthHeader() });
       const data = await r.json();
-      
       setEmails(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error(err);
       setEmails([]);
     }
   };
@@ -40,7 +53,7 @@ export const EmailManager: React.FC = () => {
   useEffect(() => { fetchEmails(); }, []);
 
   const handleAddEmail = async () => {
-    if (!newEmail) return;
+    if (!newEmail || !newEmail.includes('@')) return toast.error("E-mail inválido");
     try {
       await fetch(`${API_URL}/emails`, {
         method: 'POST',
@@ -55,44 +68,114 @@ export const EmailManager: React.FC = () => {
 
   const handleSendPDF = async () => {
     const selected = emails.filter(e => e.is_selected).map(e => e.email);
-    if (selected.length === 0) return toast.warn("Selecione um destinatário!");
+    if (selected.length === 0) return toast.warn("Selecione ao menos um destinatário!");
 
     setLoading(true);
     try {
-      const pdf = new jsPDF();
-      pdf.text("ORÇAMENTO - TESTE PDF ENVIO", 20, 30);
-      const pdfBase64 = pdf.output('datauristring');
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
 
+      // --- DESIGN DO PDF (ESTILO PRODEMGE/INSTITUCIONAL) ---
+      
+      // Cabeçalho Roxo
+      doc.setFillColor(145, 0, 255); 
+      doc.rect(0, 0, pageWidth, 40, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      doc.text("PROPOSTA DE INVESTIMENTO", 15, 25);
+      
+      // Detalhes da Proposta
+      doc.setTextColor(40, 40, 40);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 15, 50);
+      doc.text(`Projeto: Modernização Tecnológica Educacional`, 15, 55);
+
+      // Tabela Principal de Valores
+      autoTable(doc, {
+        startY: 65,
+        head: [['Descrição do Item', 'Quantidade / Parcelas', 'Valor Total (R$)']],
+        body: [
+          ['Total de Alunos Calculados', `${calculatedStudents}`, '-'],
+          ['Valor de Investimento Total', '-', `R$ ${formatNumber(totalCost)}`],
+          ['Entrada (Adesão)', '1x', `R$ ${formatNumber(entryFee)}`],
+          ['Taxa de Entrega / Implantação', '1x', `R$ ${formatNumber(deliveryFee)}`],
+          ['Mensalidades Restantes', `${totalMonthlyParcels}x`, `R$ ${formatNumber(monthlyPayment)}`],
+        ],
+        headStyles: { fillColor: [145, 0, 255], halign: 'center' },
+        columnStyles: { 2: { halign: 'right' } },
+        styles: { font: 'helvetica', fontSize: 10 }
+      });
+
+      // Cronograma por Exercício (Página de Valores)
+      const finalY = (doc as any).lastAutoTable.finalY || 120;
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Resumo de Desembolso por Exercício", 15, finalY + 15);
+
+      autoTable(doc, {
+        startY: finalY + 20,
+        head: [['Ano Exercício', 'Nº de Meses', 'Valor Total do Ano (R$)']],
+        body: yearlyPayments.map(p => [
+          p.year.toString(),
+          `${p.months} meses`,
+          `R$ ${formatNumber(p.total)}`
+        ]),
+        headStyles: { fillColor: [80, 80, 80], halign: 'center' },
+        columnStyles: { 2: { halign: 'right' } },
+        theme: 'grid'
+      });
+
+      // Rodapé
+      doc.setFontSize(9);
+      doc.setTextColor(150, 150, 150);
+      doc.text("Documento gerado automaticamente pelo sistema de orçamentos.", 15, 285);
+
+      const pdfBase64 = doc.output('datauristring');
+
+      // Envio via API (Resend no Backend)
       const res = await fetch(`${API_URL}/send-budget`, {
         method: 'POST',
         headers: getAuthHeader(),
         body: JSON.stringify({ pdfBase64, recipients: selected }),
       });
 
-      if (res.ok) toast.success("Enviado com sucesso!");
-      else toast.error("Erro no envio.");
-    } catch { toast.error("Falha na conexão."); }
-    finally { setLoading(false); }
+      if (res.ok) toast.success("E-mail enviado com sucesso!");
+      else toast.error("Erro no servidor de e-mail.");
+
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao gerar ou enviar PDF.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <Box sx={{ mt: 3, p: 2, borderTop: '1px dashed #ccc' }}>
+    <Paper elevation={4} sx={{ mt: 4, p: 3, borderRadius: 2, borderTop: '4px solid #9100ff' }}>
       <ToastContainer position="top-right" autoClose={3000} />
-      <Typography variant="h6" sx={{ mb: 2, fontFamily: 'Conthrax' }}>Enviar Orçamento</Typography>
+      <Typography variant="h6" sx={{ mb: 2, fontFamily: 'Conthrax', color: '#333' }}>
+        Disparo de Orçamento
+      </Typography>
       
-      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+      <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
         <TextField 
           fullWidth size="small" 
+          label="Novo e-mail de destino"
           value={newEmail} 
           onChange={e => setNewEmail(e.target.value)}
-          placeholder="email@exemplo.com"
         />
-        <Button variant="contained" onClick={handleAddEmail} sx={{ bgcolor: '#9100ff' }}><AddIcon /></Button>
+        <Button variant="contained" onClick={handleAddEmail} sx={{ bgcolor: '#9100ff' }}>
+          <AddIcon />
+        </Button>
       </Box>
 
-      <List sx={{ maxHeight: 200, overflow: 'auto', bgcolor: '#f5f5f5', borderRadius: 1 }}>
-        {emails && emails.length > 0 ? emails.map(e => (
-          <ListItem key={e.id} divider>
+      <Typography variant="subtitle2" sx={{ mb: 1, color: '#666' }}>Selecione os destinatários:</Typography>
+      <List sx={{ maxHeight: 200, overflow: 'auto', bgcolor: '#fafafa', borderRadius: 1, border: '1px solid #eee' }}>
+        {emails.length > 0 ? emails.map(e => (
+          <ListItem key={e.id} divider sx={{ py: 0 }}>
             <Checkbox 
               checked={e.is_selected} 
               onChange={async () => {
@@ -106,26 +189,24 @@ export const EmailManager: React.FC = () => {
             />
             <ListItemText primary={e.email} />
             <IconButton onClick={async () => {
-              await fetch(`${API_URL}/emails/${e.id}`, { 
-                method: 'DELETE',
-                headers: getAuthHeader()
-              });
+              await fetch(`${API_URL}/emails/${e.id}`, { method: 'DELETE', headers: getAuthHeader() });
               fetchEmails();
-            }}><DeleteIcon sx={{ color: 'red' }} /></IconButton>
+            }}><DeleteIcon color="error" /></IconButton>
           </ListItem>
         )) : (
-          <Typography sx={{ p: 2, textAlign: 'center', color: '#666' }}>Nenhum e-mail cadastrado.</Typography>
+          <Typography sx={{ p: 2, textAlign: 'center', color: '#999' }}>Nenhum e-mail disponível.</Typography>
         )}
       </List>
 
       <Button 
         fullWidth variant="contained" 
-        disabled={loading || emails.length === 0} 
+        disabled={loading || emails.filter(e => e.is_selected).length === 0} 
         onClick={handleSendPDF} 
-        sx={{ mt: 2, bgcolor: '#9100ff', py: 1.5 }}
+        startIcon={<SendIcon />}
+        sx={{ mt: 3, bgcolor: '#9100ff', py: 1.5, fontWeight: 'bold' }}
       >
-        {loading ? "ENVIANDO..." : "ENVIAR TESTE PDF"}
+        {loading ? "ENVIANDO..." : "ENVIAR ORÇAMENTO POR E-MAIL"}
       </Button>
-    </Box>
+    </Paper>
   );
 };
