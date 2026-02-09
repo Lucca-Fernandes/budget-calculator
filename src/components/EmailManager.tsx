@@ -60,8 +60,15 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
     try {
       const url = '/template.pdf'; 
       const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
+      
+      // LOGICA DA LOGO: Carrega a imagem da pasta public
+      const logoDevBytes = await fetch('/logo-desenvolve.png').then(res => res.arrayBuffer());
+      
       const externalDoc = await PDFDocument.load(existingPdfBytes);
       const pdfDoc = await PDFDocument.create();
+      
+      // LOGICA DA LOGO: Transforma em imagem do PDF
+      const logoDevImg = await pdfDoc.embedPng(logoDevBytes);
       
       const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
       const fontReg = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -71,7 +78,10 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
 
       // --- PÁGINA 1: CAPA (LANDSCAPE) ---
       const p1 = pdfDoc.addPage([841.89, 595.28]);
-      p1.drawText('DESENVOLVE', { x: 50, y: 520, size: 20, font: fontBold, color: PURPLE });
+      
+      // LOGICA DA LOGO: Desenha a logo no lugar do texto roxo "DESENVOLVE"
+      p1.drawImage(logoDevImg, { x: 50, y: 480, width: 200, height: 40 }); 
+      
       p1.drawText('SIMULAÇÃO DE VALORES E COTAÇÃO', { x: 50, y: 440, size: 36, font: fontBold });
       p1.drawText('INICIAL', { x: 50, y: 395, size: 36, font: fontBold });
       p1.drawText('PROJETO DESENVOLVE – PRODEMGE', { x: 50, y: 320, size: 20, font: fontBold });
