@@ -95,7 +95,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       // --- PÁGINA 3: DIMENSIONAMENTO (LANDSCAPE - SEM QUADRO, SEM CICLOS) ---
       const p3 = pdfDoc.addPage([841.89, 595.28]);
       p3.drawText('Dimensionamento', { x: 50, y: 510, size: 18, font: fontBold, color: PURPLE });
-      p3.drawText('Trajetórias de Transformação', { x: 50, y: 480, size: 32, font: fontBold });
+      p3.drawText('Trajetórias de Transformação', { x: 50, y: 460, size: 32, font: fontBold });
       
       const desc3 = `A implementação em ${cityName} está desenhada para um impacto de larga escala, estruturada para atender ao volume de demanda do município de forma organizada e sustentável.`;
       p3.drawText(desc3, { x: 50, y: 430, size: 14, font: fontReg, maxWidth: 700 });
