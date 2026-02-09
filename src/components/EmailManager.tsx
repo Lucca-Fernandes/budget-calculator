@@ -111,7 +111,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       // NOVO TEXTO ADICIONADO ABAIXO DO TÍTULO
       p5.drawText('A engenharia financeira prevê o escalonamento das fases para otimização orçamentária.', { 
         x: 50, 
-        y: 4, 
+        y: 420, 
         size: 18, 
         font: fontReg, 
         color: BLACK 
