@@ -92,19 +92,15 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
     const firstPage = pages[0];
     const {  height } = firstPage.getSize();
 
-    // Inserir o nome da Unidade/Cidade
-    // Nota: Você precisará ajustar os valores de x e y baseando-se no seu PDF
     firstPage.drawText(cityName.toUpperCase(), {
-      x: 20, // Ajuste conforme o layout do seu PDF
-      y: height - 125, // Ajuste conforme o layout do seu PDF
+      x: 20, 
+      y: height - 125,
       size: 14,
-      color: rgb(0.57, 0, 1), // Roxo #9100ff
+      color: rgb(0.57, 0, 1), 
     });
 
-    // 4. Editar a PÁGINA do Orçamento (Ex: Página 8)
-    // Se o seu PDF já tem a tabela em branco, escrevemos nos campos.
-    // Se não, podemos adicionar o texto de forma estruturada.
-    const budgetPage = pages[7]; // Índice 7 é a página 8
+    
+    const budgetPage = pages[7]; 
     
     const drawTableText = (text: string, x: number, y: number) => {
         budgetPage.drawText(text, { x, y, size: 10, color: rgb(0.1, 0.1, 0.1) });
