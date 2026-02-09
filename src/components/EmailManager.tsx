@@ -92,8 +92,12 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
 
       // --- PÁGINA 3: DIMENSIONAMENTO ---
       const p3 = pdfDoc.addPage([841.89, 595.28]);
-      p3.drawImage(logoTopoImg, { x: 50, y: 700, width: 35, height: 35 }); // Logo Topo Esquerdo
-      p3.drawText('Dimensionamento', { x: 50, y: 480, size: 32, font: fontBold });
+p3.drawImage(logoTopoImg, { 
+  x: 50, 
+  y: 530, 
+  width: 35, 
+  height: 35 
+});      p3.drawText('Dimensionamento', { x: 50, y: 480, size: 32, font: fontBold });
       p3.drawText(`A implementação em ${cityName} está desenhada para um impacto de larga escala.`, { x: 50, y: 430, size: 13, font: fontReg, maxWidth: 700 });
       p3.drawText('Público Beneficiário', { x: 50, y: 360, size: 18, font: fontBold });
       p3.drawText(`Total de Cidadãos: ${calculatedStudents.toLocaleString('pt-BR')}`, { x: 50, y: 330, size: 22, font: fontBold, color: PURPLE });
