@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Box, TextField, Button, Typography, Checkbox, IconButton, 
   List, ListItem, ListItemText, Paper, Dialog, DialogTitle, 
-  DialogContent, DialogActions, CircularProgress 
+  DialogContent, DialogActions
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -58,13 +58,17 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
     setLoading(true);
     
     try {
-      const existingPdfBytes = await fetch('/template.pdf').then(res => res.arrayBuffer());
-      const logoTopoBytes = await fetch('/logo-topo.png').then(res => res.arrayBuffer());
-      const logoDevBytes = await fetch('/logo-desenvolve.png').then(res => res.arrayBuffer());
+      // Carregamento dos Assets
+      const [pdfBytes, logoTopoBytes, logoDevBytes] = await Promise.all([
+        fetch('/template.pdf').then(res => res.arrayBuffer()),
+        fetch('/logo-topo.png').then(res => res.arrayBuffer()),
+        fetch('/logo-desenvolve.png').then(res => res.arrayBuffer())
+      ]);
 
-      const externalDoc = await PDFDocument.load(existingPdfBytes);
+      const externalDoc = await PDFDocument.load(pdfBytes);
       const pdfDoc = await PDFDocument.create();
       
+      // Embed das imagens
       const logoTopoImg = await pdfDoc.embedPng(logoTopoBytes);
       const logoDevImg = await pdfDoc.embedPng(logoDevBytes);
 
@@ -73,14 +77,9 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       const PURPLE = rgb(0.57, 0, 1);
       const GRAY = rgb(0.4, 0.4, 0.4);
 
-      // Função auxiliar para desenhar a logo do topo em todas as páginas manipuladas
-      const drawHeaderLogo = (page: any) => {
-        page.drawImage(logoTopoImg, { x: 40, y: 530, width: 100, height: 40 });
-      };
-
       // --- PÁGINA 1: CAPA ---
       const p1 = pdfDoc.addPage([841.89, 595.28]);
-      p1.drawImage(logoDevImg, { x: 50, y: 480, width: 180, height: 60 }); // Substitui o texto "Desenvolve"
+      p1.drawImage(logoDevImg, { x: 50, y: 480, width: 160, height: 50 }); // Logo Desenvolve no lugar do texto
       p1.drawText('SIMULAÇÃO DE VALORES E COTAÇÃO', { x: 50, y: 400, size: 36, font: fontBold });
       p1.drawText('INICIAL', { x: 50, y: 355, size: 36, font: fontBold });
       p1.drawText('PROJETO DESENVOLVE – PRODEMGE', { x: 50, y: 280, size: 20, font: fontBold });
@@ -93,7 +92,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
 
       // --- PÁGINA 3: DIMENSIONAMENTO ---
       const p3 = pdfDoc.addPage([841.89, 595.28]);
-      drawHeaderLogo(p3);
+      p3.drawImage(logoTopoImg, { x: 50, y: 530, width: 80, height: 35 }); // Logo Topo Esquerdo
       p3.drawText('Dimensionamento', { x: 50, y: 480, size: 32, font: fontBold });
       p3.drawText(`A implementação em ${cityName} está desenhada para um impacto de larga escala.`, { x: 50, y: 430, size: 13, font: fontReg, maxWidth: 700 });
       p3.drawText('Público Beneficiário', { x: 50, y: 360, size: 18, font: fontBold });
@@ -108,7 +107,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
 
       // --- PÁGINA 5: ENGENHARIA FINANCEIRA ---
       const p5 = pdfDoc.addPage([841.89, 595.28]);
-      drawHeaderLogo(p5);
+      p5.drawImage(logoTopoImg, { x: 50, y: 530, width: 80, height: 35 }); // Logo Topo Esquerdo
       const unitCost = totalCost / calculatedStudents;
       const globalValue = totalCost >= 1000000 ? `${(totalCost/1000000).toFixed(2)}M` : formatNumber(totalCost);
 
@@ -129,9 +128,9 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       const copiedFinals = await pdfDoc.copyPages(externalDoc, finalIndices);
       copiedFinals.forEach(p => pdfDoc.addPage(p));
 
-      // --- ENVIO ---
-      const pdfBytes = await pdfDoc.save();
-      const base64String = btoa(new Uint8Array(pdfBytes).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+      // --- FINALIZAÇÃO ---
+      const pdfSave = await pdfDoc.save();
+      const base64String = btoa(new Uint8Array(pdfSave).reduce((data, byte) => data + String.fromCharCode(byte), ''));
       const pdfBase64 = `data:application/pdf;base64,${base64String}`;
 
       const res = await fetch(`${API_URL}/send-budget`, {
@@ -140,12 +139,12 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
         body: JSON.stringify({ pdfBase64, recipients: emails.filter(e => e.is_selected).map(e => e.email) }),
       });
 
-      if (res.ok) toast.success("Proposta enviada!");
+      if (res.ok) toast.success("PDF com logos enviado!");
       else throw new Error();
 
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao gerar PDF.");
+      toast.error("Erro crítico: Verifique se logo-topo.png e logo-desenvolve.png estão na pasta public.");
     } finally {
       setLoading(false);
     }
@@ -155,18 +154,16 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
     <Paper elevation={4} sx={{ mt: 4, p: 3, borderRadius: 2, borderTop: '5px solid #9100ff' }}>
       <ToastContainer position="top-right" />
       <Dialog open={openCityPopup} onClose={() => !loading && setOpenCityPopup(false)} fullWidth maxWidth="xs">
-        <DialogTitle sx={{ fontFamily: 'Conthrax', color: '#9100ff' }}>Personalizar Proposta</DialogTitle>
+        <DialogTitle sx={{ fontFamily: 'Conthrax', color: '#9100ff' }}>Enviar Proposta</DialogTitle>
         <DialogContent>
-          <TextField autoFocus fullWidth variant="outlined" label="Cidade" value={cityName} onChange={(e) => setCityName(e.target.value)} disabled={loading} sx={{ mt: 1 }} />
+          <TextField autoFocus fullWidth label="Cidade da Unidade" value={cityName} onChange={(e) => setCityName(e.target.value)} sx={{ mt: 1 }} />
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setOpenCityPopup(false)} color="inherit" disabled={loading}>Cancelar</Button>
-          <Button onClick={generateAndSendPDF} variant="contained" disabled={!cityName || loading} sx={{ bgcolor: '#9100ff' }}>
-            {loading ? <CircularProgress size={24} color="inherit" /> : "Gerar e Enviar"}
-          </Button>
+        <DialogActions>
+          <Button onClick={() => setOpenCityPopup(false)}>Cancelar</Button>
+          <Button onClick={generateAndSendPDF} variant="contained" sx={{ bgcolor: '#9100ff' }}>Enviar</Button>
         </DialogActions>
       </Dialog>
-      <Typography variant="h6" sx={{ mb: 2, fontFamily: 'Conthrax', fontSize: '1.1rem' }}>Disparo de Proposta Institucional</Typography>
+      <Typography variant="h6" sx={{ mb: 2, fontFamily: 'Conthrax' }}>Disparo Institucional</Typography>
       <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
         <TextField fullWidth size="small" label="E-mail" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
         <Button variant="contained" onClick={async () => {
@@ -177,7 +174,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       </Box>
       <List sx={{ maxHeight: 180, overflow: 'auto', mb: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
         {emails.map(e => (
-          <ListItem key={e.id} sx={{ py: 0 }}>
+          <ListItem key={e.id}>
             <Checkbox checked={e.is_selected} onChange={async () => {
                await fetch(`${API_URL}/emails/${e.id}`, { method: 'PATCH', headers: getAuthHeader(), body: JSON.stringify({is_selected: !e.is_selected}) });
                fetchEmails();
@@ -186,12 +183,12 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
             <IconButton onClick={async () => {
               await fetch(`${API_URL}/emails/${e.id}`, { method: 'DELETE', headers: getAuthHeader() });
               fetchEmails();
-            }}><DeleteIcon color="error" fontSize="small" /></IconButton>
+            }}><DeleteIcon color="error" /></IconButton>
           </ListItem>
         ))}
       </List>
-      <Button fullWidth variant="contained" disabled={loading || emails.filter(e => e.is_selected).length === 0} onClick={triggerCityPopup} startIcon={<SendIcon />} sx={{ bgcolor: '#9100ff', py: 2, fontWeight: 'bold' }}>
-        {loading ? "GERANDO..." : "ENVIAR PROPOSTA COMPLETA"}
+      <Button fullWidth variant="contained" onClick={triggerCityPopup} startIcon={<SendIcon />} sx={{ bgcolor: '#9100ff', py: 2 }}>
+        {loading ? "PROCESSANDO..." : "ENVIAR PROPOSTA COMPLETA"}
       </Button>
     </Paper>
   );
