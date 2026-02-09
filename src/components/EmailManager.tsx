@@ -24,7 +24,7 @@ interface EmailManagerProps {
 }
 
 export const EmailManager: React.FC<EmailManagerProps> = ({
-  calculatedStudents, totalCost, formatNumber
+  calculatedStudents, totalCost, formatNumber, yearlyPayments, totalMonthlyParcels
 }) => {
   const [emails, setEmails] = useState<any[]>([]);
   const [newEmail, setNewEmail] = useState('');
@@ -137,6 +137,30 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       drawCol(`R$ ${formatNumber(unitCost)}`, 'Investimento Unitário', 'Por cidadão beneficiado', 50);
       drawCol(`${calculatedStudents.toLocaleString('pt-BR')}`, 'Total de Cidadãos', 'Cidadãos Beneficiados', 340);
       drawCol(`R$ ${globalValue}`, 'Investimento Global', 'Valor total do projeto', 600);
+
+// --- PÁGINA 7: PREVISÃO ORÇAMENTÁRIA (DADOS REAIS) ---
+      const p7 = pdfDoc.addPage([841.89, 595.28]);
+      
+      p7.drawText('DESENVOLVE', { x: 50, y: 520, size: 18, font: fontBold, color: PURPLE });
+      p7.drawText('Previsão Orçamentária', { x: 50, y: 480, size: 32, font: fontBold });
+      p7.drawText('Distribuição por Exercício Fiscal', { x: 50, y: 445, size: 18, font: fontBold });
+      p7.drawText('Planejamento financeiro dividido por ano para facilitar o processo orçamentário municipal.', { x: 50, y: 420, size: 12, font: fontReg, color: GRAY });
+
+      // Listagem dos Anos com Dados Reais
+      let currentY = 350;
+      yearlyPayments.forEach((item: any) => {
+        p7.drawText(`• Ano ${item.year}: R$ ${formatNumber(item.total)}`, {
+          x: 70,
+          y: currentY,
+          size: 16,
+          font: fontBold,
+          color: rgb(0, 0, 0)
+        });
+        currentY -= 30;
+      });
+
+      const totalExecucao = `Total de ${totalMonthlyParcels + 2} meses de execução, com valores calculados com base no cronograma de desembolso real.`;
+      p7.drawText(totalExecucao, { x: 50, y: currentY - 20, size: 12, font: fontReg, color: GRAY });
 
       // --- PÁGINAS FINAIS (COPIADAS) ---
       const finalIndices = [5, 6, 9]; // Cronograma, Previsão e Nota Jurídica
