@@ -1,3 +1,4 @@
+import { PDFDocument, rgb,  } from 'pdf-lib';
 import React, { useState, useEffect } from 'react';
 import { 
   Box, TextField, Button, Typography, Checkbox, IconButton, 
@@ -8,8 +9,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import SendIcon from '@mui/icons-material/Send';
 import { toast, ToastContainer } from 'react-toastify';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+
 
 const API_URL = 'https://budget-calculator-zntc.onrender.com';
 
@@ -25,8 +25,7 @@ interface EmailManagerProps {
 }
 
 export const EmailManager: React.FC<EmailManagerProps> = ({
-  calculatedStudents, totalCost, entryFee, deliveryFee, 
-  monthlyPayment, totalMonthlyParcels, yearlyPayments, formatNumber
+  calculatedStudents, totalCost, entryFee, formatNumber
 }) => {
   const [emails, setEmails] = useState<any[]>([]);
   const [newEmail, setNewEmail] = useState('');
@@ -78,120 +77,75 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
   };
 
   const generateAndSendPDF = async () => {
-    if (!cityName) return toast.warn("Informe o nome da Unidade/Cidade");
+  if (!cityName) return toast.warn("Informe a cidade");
+  setLoading(true);
+
+  try {
+    // 1. Carregar o PDF padrão da raiz (pasta public)
+    const existingPdfBytes = await fetch('/template.pdf').then(res => res.arrayBuffer());
+
+    // 2. Carregar o documento
+    const pdfDoc = await PDFDocument.load(existingPdfBytes);
+    const pages = pdfDoc.getPages();
     
+    // 3. Editar a PRIMEIRA PÁGINA (Capa)
+    const firstPage = pages[0];
+    const {  height } = firstPage.getSize();
+
+    // Inserir o nome da Unidade/Cidade
+    // Nota: Você precisará ajustar os valores de x e y baseando-se no seu PDF
+    firstPage.drawText(cityName.toUpperCase(), {
+      x: 20, // Ajuste conforme o layout do seu PDF
+      y: height - 125, // Ajuste conforme o layout do seu PDF
+      size: 14,
+      color: rgb(0.57, 0, 1), // Roxo #9100ff
+    });
+
+    // 4. Editar a PÁGINA do Orçamento (Ex: Página 8)
+    // Se o seu PDF já tem a tabela em branco, escrevemos nos campos.
+    // Se não, podemos adicionar o texto de forma estruturada.
+    const budgetPage = pages[7]; // Índice 7 é a página 8
+    
+    const drawTableText = (text: string, x: number, y: number) => {
+        budgetPage.drawText(text, { x, y, size: 10, color: rgb(0.1, 0.1, 0.1) });
+    };
+
+    // Exemplo de preenchimento dos dados variáveis sobre o PDF original
+    drawTableText(`${calculatedStudents}`, 150, height - 52); 
+    drawTableText(`R$ ${formatNumber(totalCost)}`, 150, height - 60);
+    drawTableText(`R$ ${formatNumber(entryFee)}`, 150, height - 68);
+
+    // 5. Finalizar o PDF
+    const pdfBytes = await pdfDoc.save();
+    
+    // Converter para Base64 para enviar ao backend
+    const base64String = btoa(
+      new Uint8Array(pdfBytes)
+        .reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
+    const pdfBase64 = `data:application/pdf;base64,${base64String}`;
+
+    // 6. Enviar
+    const res = await fetch(`${API_URL}/send-budget`, {
+      method: 'POST',
+      headers: getAuthHeader(),
+      body: JSON.stringify({ 
+        pdfBase64, 
+        recipients: emails.filter(e => e.is_selected).map(e => e.email) 
+      }),
+    });
+
+    if (res.ok) toast.success("PDF editado e enviado com sucesso!");
+    else throw new Error();
+
+  } catch (err) {
+    console.error(err);
+    toast.error("Erro ao processar template de PDF.");
+  } finally {
+    setLoading(false);
     setOpenCityPopup(false);
-    setLoading(true);
-    
-    try {
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const PURPLE: [number, number, number] = [145, 0, 255]; 
-      const DARK_TEXT: [number, number, number] = [40, 40, 40];
-      const GRAY_TEXT: [number, number, number] = [100, 100, 100];
-
-      const applyPageLayout = (pageNum: number) => {
-        doc.setFillColor(PURPLE[0], PURPLE[1], PURPLE[2]);
-        doc.rect(0, 0, 6, pageHeight, 'F');
-        doc.setFontSize(10);
-        doc.setTextColor(PURPLE[0], PURPLE[1], PURPLE[2]);
-        doc.setFont("helvetica", "bold");
-        doc.text("DESENVOLVE", pageWidth - 35, 15);
-        doc.setFontSize(8);
-        doc.setTextColor(GRAY_TEXT[0], GRAY_TEXT[1], GRAY_TEXT[2]);
-        doc.setFont("helvetica", "normal");
-        doc.text(`PRODEMGE DESENVOLVE | UNIDADE: ${cityName.toUpperCase()}`, 15, pageHeight - 10);
-        doc.text(`${pageNum}`, pageWidth - 15, pageHeight - 10);
-      };
-
-      // PÁGINA 1: CAPA
-      applyPageLayout(1);
-      doc.setFontSize(28);
-      doc.setTextColor(PURPLE[0], PURPLE[1], PURPLE[2]);
-      doc.setFont("helvetica", "bold");
-      doc.text("SIMULAÇÃO DE VALORES E", 20, 85);
-      doc.text("COTAÇÃO INICIAL", 20, 98);
-      doc.setFontSize(16);
-      doc.setTextColor(DARK_TEXT[0], DARK_TEXT[1], DARK_TEXT[2]);
-      doc.text("PROJETO DESENVOLVE – PRODEMGE", 20, 115);
-      doc.setFontSize(14);
-      doc.setTextColor(PURPLE[0], PURPLE[1], PURPLE[2]);
-      doc.text(`UNIDADE: ${cityName.toUpperCase()}`, 20, 125);
-      doc.setFontSize(10);
-      doc.setTextColor(GRAY_TEXT[0], GRAY_TEXT[1], GRAY_TEXT[2]);
-      doc.text("Programa de Desenvolvimento Econômico e Transformação Social", 20, 135);
-
-      // PÁGINA 2: CONTEXTUALIZAÇÃO
-      doc.addPage();
-      applyPageLayout(2);
-      doc.setFontSize(18); doc.setTextColor(PURPLE[0], PURPLE[1], PURPLE[2]);
-      doc.text("Contextualização", 20, 35);
-      doc.setFontSize(12); doc.setTextColor(DARK_TEXT[0], DARK_TEXT[1], DARK_TEXT[2]);
-      doc.text("Propósito do Investimento", 20, 45);
-      doc.setFontSize(10); doc.setTextColor(GRAY_TEXT[0], GRAY_TEXT[1], GRAY_TEXT[2]);
-      const ctxText = "O PRODEMGE DESENVOLVE é um programa de governo estratégico, voltado para o Desenvolvimento Econômico e a Transformação Social dos municípios mineiros.\n\nAtravés da parceria estratégica entre PRODEMGE e PECC (Contrato 002/2025), a iniciativa visa qualificar o capital humano para as demandas reais do mercado de tecnologia, conectando o cidadão a oportunidades concretas de geração de renda.";
-      doc.text(doc.splitTextToSize(ctxText, pageWidth - 45), 20, 55);
-
-      // PÁGINA 8: DIMENSIONAMENTO FINANCEIRO
-      doc.addPage();
-      applyPageLayout(8);
-      doc.setFontSize(18); doc.setTextColor(PURPLE[0], PURPLE[1], PURPLE[2]);
-      doc.text("Dimensionamento Financeiro", 20, 35);
-      doc.setFontSize(10); doc.setTextColor(DARK_TEXT[0], DARK_TEXT[1], DARK_TEXT[2]);
-      doc.text(`Cotação estruturada para a Unidade ${cityName}:`, 20, 45);
-
-      autoTable(doc, {
-        startY: 52,
-        head: [['Descrição do Investimento', 'Referência', 'Total (R$)']],
-        body: [
-          ['Alunos Beneficiados', `${calculatedStudents}`, '-'],
-          ['Investimento Total do Projeto', '-', `R$ ${formatNumber(totalCost)}`],
-          ['Adesão (Entrada em 30 dias)', '1x', `R$ ${formatNumber(entryFee)}`],
-          ['Taxa de Implantação (60 dias)', '1x', `R$ ${formatNumber(deliveryFee)}`],
-          ['Mensalidade Operacional', `${totalMonthlyParcels}x`, `R$ ${formatNumber(monthlyPayment)}`],
-        ],
-        headStyles: { fillColor: PURPLE, fontSize: 10 },
-        styles: { fontSize: 9, cellPadding: 4 },
-        columnStyles: { 2: { halign: 'right' } }
-      });
-
-      const finalY = (doc as any).lastAutoTable.finalY + 12;
-      doc.setFontSize(12); doc.setTextColor(PURPLE[0], PURPLE[1], PURPLE[2]);
-      doc.text("Cronograma de Desembolso por Exercício", 20, finalY);
-      
-      autoTable(doc, {
-        startY: finalY + 5,
-        head: [['Ano Exercício', 'Nº de Parcelas', 'Subtotal Anual (R$)']],
-        body: yearlyPayments.map(p => [p.year, `${p.months} meses`, `R$ ${formatNumber(p.total)}`]),
-        headStyles: { fillColor: [80, 80, 80] },
-        styles: { fontSize: 9 },
-        columnStyles: { 2: { halign: 'right' } }
-      });
-
-      const pdfBase64 = doc.output('datauristring');
-
-      const res = await fetch(`${API_URL}/send-budget`, {
-        method: 'POST',
-        headers: getAuthHeader(),
-        body: JSON.stringify({ 
-          pdfBase64, 
-          recipients: emails.filter(e => e.is_selected).map(e => e.email) 
-        }),
-      });
-
-      if (res.ok) {
-        toast.success("PDF Institucional enviado com sucesso!");
-      } else {
-        throw new Error();
-      }
-
-    } catch (err) {
-      toast.error("Falha ao gerar ou enviar o PDF.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  }
+};
 
   return (
     <Paper elevation={4} sx={{ mt: 4, p: 3, borderRadius: 2, borderTop: '5px solid #9100ff' }}>
