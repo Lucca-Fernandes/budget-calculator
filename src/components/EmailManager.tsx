@@ -58,40 +58,46 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
     setLoading(true);
     
     try {
-      const url = '/template.pdf'; 
-      const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
+      const existingPdfBytes = await fetch('/template.pdf').then(res => res.arrayBuffer());
+      const logoTopoBytes = await fetch('/logo-topo.png').then(res => res.arrayBuffer());
+      const logoDevBytes = await fetch('/logo-desenvolve.png').then(res => res.arrayBuffer());
+
       const externalDoc = await PDFDocument.load(existingPdfBytes);
       const pdfDoc = await PDFDocument.create();
       
+      const logoTopoImg = await pdfDoc.embedPng(logoTopoBytes);
+      const logoDevImg = await pdfDoc.embedPng(logoDevBytes);
+
       const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
       const fontReg = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const PURPLE = rgb(0.57, 0, 1);
       const GRAY = rgb(0.4, 0.4, 0.4);
 
-      // --- PÁGINA 1: CAPA (LANDSCAPE) ---
+      // Função auxiliar para desenhar a logo do topo em todas as páginas manipuladas
+      const drawHeaderLogo = (page: any) => {
+        page.drawImage(logoTopoImg, { x: 40, y: 530, width: 100, height: 40 });
+      };
+
+      // --- PÁGINA 1: CAPA ---
       const p1 = pdfDoc.addPage([841.89, 595.28]);
-      p1.drawText('DESENVOLVE', { x: 50, y: 520, size: 20, font: fontBold, color: PURPLE });
-      p1.drawText('SIMULAÇÃO DE VALORES E COTAÇÃO', { x: 50, y: 440, size: 36, font: fontBold });
-      p1.drawText('INICIAL', { x: 50, y: 395, size: 36, font: fontBold });
-      p1.drawText('PROJETO DESENVOLVE – PRODEMGE', { x: 50, y: 320, size: 20, font: fontBold });
-      p1.drawText(`UNIDADE: ${cityName.toUpperCase()}`, { x: 50, y: 280, size: 16, font: fontBold, color: PURPLE });
-      p1.drawText('Programa de Desenvolvimento Econômico e Transformação Social', { x: 50, y: 255, size: 12, font: fontReg, color: GRAY });
+      p1.drawImage(logoDevImg, { x: 50, y: 480, width: 180, height: 60 }); // Substitui o texto "Desenvolve"
+      p1.drawText('SIMULAÇÃO DE VALORES E COTAÇÃO', { x: 50, y: 400, size: 36, font: fontBold });
+      p1.drawText('INICIAL', { x: 50, y: 355, size: 36, font: fontBold });
+      p1.drawText('PROJETO DESENVOLVE – PRODEMGE', { x: 50, y: 280, size: 20, font: fontBold });
+      p1.drawText(`UNIDADE: ${cityName.toUpperCase()}`, { x: 50, y: 240, size: 16, font: fontBold, color: PURPLE });
+      p1.drawText('Programa de Desenvolvimento Econômico e Transformação Social', { x: 50, y: 215, size: 12, font: fontReg, color: GRAY });
 
       // --- PÁGINA 2: INSTITUCIONAL (COPIADA) ---
       const [page2] = await pdfDoc.copyPages(externalDoc, [1]);
       pdfDoc.addPage(page2);
 
-      // --- PÁGINA 3: DIMENSIONAMENTO (LANDSCAPE - SEM QUADRO, SEM CICLOS) ---
+      // --- PÁGINA 3: DIMENSIONAMENTO ---
       const p3 = pdfDoc.addPage([841.89, 595.28]);
-      p3.drawText('DESENVOLVE', { x: 50, y: 520, size: 18, font: fontBold, color: PURPLE });
+      drawHeaderLogo(p3);
       p3.drawText('Dimensionamento', { x: 50, y: 480, size: 32, font: fontBold });
-      
-      const desc3 = `A implementação em ${cityName} está desenhada para um impacto de larga escala, estruturada para atender ao volume de demanda do município de forma organizada e sustentável.`;
-      p3.drawText(desc3, { x: 50, y: 430, size: 13, font: fontReg, maxWidth: 700 });
-
+      p3.drawText(`A implementação em ${cityName} está desenhada para um impacto de larga escala.`, { x: 50, y: 430, size: 13, font: fontReg, maxWidth: 700 });
       p3.drawText('Público Beneficiário', { x: 50, y: 360, size: 18, font: fontBold });
       p3.drawText(`Total de Cidadãos: ${calculatedStudents.toLocaleString('pt-BR')}`, { x: 50, y: 330, size: 22, font: fontBold, color: PURPLE });
-
       p3.drawText('Responsabilidade Municipal', { x: 50, y: 260, size: 18, font: fontBold });
       const respText = `Fornecimento de espaço físico adequado para credenciamento e funcionamento da "Unidade Polo" da Escola Desenvolve, servindo como centro de referência e apoio aos alunos.`;
       p3.drawText(respText, { x: 50, y: 235, size: 13, font: fontReg, maxWidth: 650, lineHeight: 18 });
@@ -100,15 +106,14 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       const [page4] = await pdfDoc.copyPages(externalDoc, [3]);
       pdfDoc.addPage(page4);
 
-      // --- PÁGINA 5: ENGENHARIA FINANCEIRA (LANDSCAPE - DADOS CALCULADORA) ---
+      // --- PÁGINA 5: ENGENHARIA FINANCEIRA ---
       const p5 = pdfDoc.addPage([841.89, 595.28]);
+      drawHeaderLogo(p5);
       const unitCost = totalCost / calculatedStudents;
       const globalValue = totalCost >= 1000000 ? `${(totalCost/1000000).toFixed(2)}M` : formatNumber(totalCost);
 
-      p5.drawText('Engenharia Financeira', { x: 50, y: 520, size: 18, font: fontBold, color: PURPLE });
       p5.drawText('Estrutura de Investimento Social', { x: 50, y: 480, size: 32, font: fontBold });
-
-      // Layout de Colunas
+      
       const drawCol = (val: string, label: string, sub: string, x: number) => {
         p5.drawText(val, { x, y: 350, size: 40, font: fontBold, color: PURPLE });
         p5.drawText(label, { x, y: 310, size: 16, font: fontBold });
@@ -120,7 +125,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       drawCol(`R$ ${globalValue}`, 'Investimento Global', 'Valor total do projeto', 600);
 
       // --- PÁGINAS FINAIS (COPIADAS) ---
-      const finalIndices = [5, 6, 9]; // Cronograma, Previsão e Nota Jurídica
+      const finalIndices = [5, 6, 9];
       const copiedFinals = await pdfDoc.copyPages(externalDoc, finalIndices);
       copiedFinals.forEach(p => pdfDoc.addPage(p));
 
@@ -135,7 +140,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
         body: JSON.stringify({ pdfBase64, recipients: emails.filter(e => e.is_selected).map(e => e.email) }),
       });
 
-      if (res.ok) toast.success("PDF enviado com sucesso!");
+      if (res.ok) toast.success("Proposta enviada!");
       else throw new Error();
 
     } catch (err) {
@@ -161,7 +166,6 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
-
       <Typography variant="h6" sx={{ mb: 2, fontFamily: 'Conthrax', fontSize: '1.1rem' }}>Disparo de Proposta Institucional</Typography>
       <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
         <TextField fullWidth size="small" label="E-mail" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
@@ -171,7 +175,6 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
           setNewEmail(''); fetchEmails();
         }} sx={{ bgcolor: '#9100ff' }}><AddIcon /></Button>
       </Box>
-
       <List sx={{ maxHeight: 180, overflow: 'auto', mb: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
         {emails.map(e => (
           <ListItem key={e.id} sx={{ py: 0 }}>
@@ -187,7 +190,6 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
           </ListItem>
         ))}
       </List>
-
       <Button fullWidth variant="contained" disabled={loading || emails.filter(e => e.is_selected).length === 0} onClick={triggerCityPopup} startIcon={<SendIcon />} sx={{ bgcolor: '#9100ff', py: 2, fontWeight: 'bold' }}>
         {loading ? "GERANDO..." : "ENVIAR PROPOSTA COMPLETA"}
       </Button>
