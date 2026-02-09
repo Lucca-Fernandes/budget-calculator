@@ -24,8 +24,7 @@ interface EmailManagerProps {
 }
 
 export const EmailManager: React.FC<EmailManagerProps> = ({
-  calculatedStudents, totalCost, entryFee, deliveryFee, 
-  monthlyPayment, totalMonthlyParcels, yearlyPayments, formatNumber
+  calculatedStudents, totalCost,formatNumber
 }) => {
   const [emails, setEmails] = useState<any[]>([]);
   const [newEmail, setNewEmail] = useState('');
