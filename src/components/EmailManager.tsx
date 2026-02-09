@@ -24,7 +24,7 @@ interface EmailManagerProps {
 }
 
 export const EmailManager: React.FC<EmailManagerProps> = ({
-  calculatedStudents, totalCost,formatNumber
+  calculatedStudents, totalCost, formatNumber
 }) => {
   const [emails, setEmails] = useState<any[]>([]);
   const [newEmail, setNewEmail] = useState('');
@@ -53,12 +53,13 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
   };
 
   const generateAndSendPDF = async () => {
-    if (!cityName) return toast.warn("Informe o nome da Unidade/Cidade");
+    if (!cityName) return toast.warn("Informe a cidade");
     setOpenCityPopup(false);
     setLoading(true);
     
     try {
-      const existingPdfBytes = await fetch('/template.pdf').then(res => res.arrayBuffer());
+      const url = '/template.pdf'; 
+      const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
       const externalDoc = await PDFDocument.load(existingPdfBytes);
       const pdfDoc = await PDFDocument.create();
       
@@ -67,71 +68,63 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       const PURPLE = rgb(0.57, 0, 1);
       const GRAY = rgb(0.4, 0.4, 0.4);
 
-      // --- PÁGINA 1: CAPA (CONSTRUÍDA DO ZERO) ---
-      const page1 = pdfDoc.addPage([841.89, 595.28]); // Paisagem conforme imagem
-      page1.drawText('DESENVOLVE', { x: 50, y: 500, size: 24, font: fontBold, color: GRAY });
-      page1.drawText('SIMULAÇÃO DE VALORES E COTAÇÃO', { x: 50, y: 400, size: 38, font: fontBold });
-      page1.drawText('INICIAL', { x: 50, y: 350, size: 38, font: fontBold });
-      page1.drawText('PROJETO DESENVOLVE – PRODEMGE', { x: 50, y: 280, size: 22, font: fontBold });
-      page1.drawText(`UNIDADE: ${cityName.toUpperCase()}`, { x: 50, y: 220, size: 14, font: fontBold });
-      page1.drawText('Programa de Desenvolvimento Econômico e Transformação Social', { x: 50, y: 190, size: 12, font: fontReg });
+      // --- PÁGINA 1: CAPA (LANDSCAPE) ---
+      const p1 = pdfDoc.addPage([841.89, 595.28]);
+      p1.drawText('DESENVOLVE', { x: 50, y: 520, size: 20, font: fontBold, color: PURPLE });
+      p1.drawText('SIMULAÇÃO DE VALORES E COTAÇÃO', { x: 50, y: 440, size: 36, font: fontBold });
+      p1.drawText('INICIAL', { x: 50, y: 395, size: 36, font: fontBold });
+      p1.drawText('PROJETO DESENVOLVE – PRODEMGE', { x: 50, y: 320, size: 20, font: fontBold });
+      p1.drawText(`UNIDADE: ${cityName.toUpperCase()}`, { x: 50, y: 280, size: 16, font: fontBold, color: PURPLE });
+      p1.drawText('Programa de Desenvolvimento Econômico e Transformação Social', { x: 50, y: 255, size: 12, font: fontReg, color: GRAY });
 
       // --- PÁGINA 2: INSTITUCIONAL (COPIADA) ---
-      const [instPage2] = await pdfDoc.copyPages(externalDoc, [1]);
-      pdfDoc.addPage(instPage2);
+      const [page2] = await pdfDoc.copyPages(externalDoc, [1]);
+      pdfDoc.addPage(page2);
 
-      // --- PÁGINA 3: DIMENSIONAMENTO (CONSTRUÍDA DO ZERO) ---
-      const page3 = pdfDoc.addPage([841.89, 595.28]);
-      page3.drawText('Dimensionamento', { x: 50, y: 500, size: 18, font: fontBold, color: PURPLE });
-      page3.drawText('Trajetórias de Transformação', { x: 50, y: 460, size: 28, font: fontBold });
+      // --- PÁGINA 3: DIMENSIONAMENTO (LANDSCAPE - SEM QUADRO, SEM CICLOS) ---
+      const p3 = pdfDoc.addPage([841.89, 595.28]);
+      p3.drawText('DESENVOLVE', { x: 50, y: 520, size: 18, font: fontBold, color: PURPLE });
+      p3.drawText('Dimensionamento', { x: 50, y: 480, size: 32, font: fontBold });
       
-      const dimText = `A implementação em ${cityName} está desenhada para um impacto de larga escala, estruturada para atender ao volume de demanda do município de forma organizada e sustentável.`;
-      page3.drawText(dimText, { x: 50, y: 410, size: 14, font: fontReg, maxWidth: 700 });
+      const desc3 = `A implementação em ${cityName} está desenhada para um impacto de larga escala, estruturada para atender ao volume de demanda do município de forma organizada e sustentável.`;
+      p3.drawText(desc3, { x: 50, y: 430, size: 13, font: fontReg, maxWidth: 700 });
 
-      page3.drawText('Público Beneficiário', { x: 50, y: 340, size: 16, font: fontBold });
-      page3.drawText(`${calculatedStudents.toLocaleString('pt-BR')} cidadãos divididos em dois ciclos:`, { x: 50, y: 310, size: 14, font: fontReg });
-      page3.drawText(`• Fase 1: ${(calculatedStudents/2).toLocaleString('pt-BR')} participantes`, { x: 70, y: 280, size: 12, font: fontReg });
-      page3.drawText(`• Fase 2: ${(calculatedStudents/2).toLocaleString('pt-BR')} participantes`, { x: 70, y: 260, size: 12, font: fontReg });
+      p3.drawText('Público Beneficiário', { x: 50, y: 360, size: 18, font: fontBold });
+      p3.drawText(`Total de Cidadãos: ${calculatedStudents.toLocaleString('pt-BR')}`, { x: 50, y: 330, size: 22, font: fontBold, color: PURPLE });
 
-      // Box roxo de bônus
-      page3.drawRectangle({ x: 500, y: 180, width: 300, height: 150, color: rgb(0.9, 0.8, 1) });
-      page3.drawText('36 meses de formação', { x: 520, y: 300, size: 14, font: fontBold });
-      page3.drawText('Ao optar por uma das trilhas diplomadoras, o cidadão garante a extensão do seu ciclo de formação para até 36 meses, sem custos adicionais ao município.', { x: 520, y: 280, size: 11, font: fontReg, maxWidth: 260 });
+      p3.drawText('Responsabilidade Municipal', { x: 50, y: 260, size: 18, font: fontBold });
+      const respText = `Fornecimento de espaço físico adequado para credenciamento e funcionamento da "Unidade Polo" da Escola Desenvolve, servindo como centro de referência e apoio aos alunos.`;
+      p3.drawText(respText, { x: 50, y: 235, size: 13, font: fontReg, maxWidth: 650, lineHeight: 18 });
 
       // --- PÁGINA 4: INSTITUCIONAL (COPIADA) ---
-      const [instPage4] = await pdfDoc.copyPages(externalDoc, [3]);
-      pdfDoc.addPage(instPage4);
+      const [page4] = await pdfDoc.copyPages(externalDoc, [3]);
+      pdfDoc.addPage(page4);
 
-      // --- PÁGINA 5: ENGENHARIA FINANCEIRA (CONSTRUÍDA DO ZERO) ---
-      const page5 = pdfDoc.addPage([841.89, 595.28]);
-      page5.drawText('Engenharia Financeira', { x: 50, y: 500, size: 18, font: fontBold, color: PURPLE });
-      page5.drawText('Estrutura de Investimento Social', { x: 50, y: 460, size: 28, font: fontBold });
-      
+      // --- PÁGINA 5: ENGENHARIA FINANCEIRA (LANDSCAPE - DADOS CALCULADORA) ---
+      const p5 = pdfDoc.addPage([841.89, 595.28]);
       const unitCost = totalCost / calculatedStudents;
+      const globalValue = totalCost >= 1000000 ? `${(totalCost/1000000).toFixed(2)}M` : formatNumber(totalCost);
 
-      // Coluna 1: Investimento Unitário
-      page5.drawText(`R$ ${formatNumber(unitCost)}`, { x: 50, y: 350, size: 42, font: fontBold });
-      page5.drawText('Investimento Unitário', { x: 50, y: 310, size: 16, font: fontBold });
-      page5.drawText('Por cidadão beneficiado', { x: 50, y: 285, size: 12, font: fontReg });
+      p5.drawText('Engenharia Financeira', { x: 50, y: 520, size: 18, font: fontBold, color: PURPLE });
+      p5.drawText('Estrutura de Investimento Social', { x: 50, y: 480, size: 32, font: fontBold });
 
-      // Coluna 2: Total de Cidadãos
-      page5.drawText(calculatedStudents.toLocaleString('pt-BR'), { x: 350, y: 350, size: 42, font: fontBold });
-      page5.drawText('Total de Cidadãos', { x: 350, y: 310, size: 16, font: fontBold });
-      page5.drawText('Divididos em duas fases', { x: 350, y: 285, size: 12, font: fontReg });
+      // Layout de Colunas
+      const drawCol = (val: string, label: string, sub: string, x: number) => {
+        p5.drawText(val, { x, y: 350, size: 40, font: fontBold, color: PURPLE });
+        p5.drawText(label, { x, y: 310, size: 16, font: fontBold });
+        p5.drawText(sub, { x, y: 290, size: 11, font: fontReg, color: GRAY });
+      };
 
-      // Coluna 3: Investimento Global
-      const globalValue = totalCost >= 1000000 ? `${(totalCost/1000000).toFixed(1)}M` : formatNumber(totalCost);
-      page5.drawText(`R$ ${globalValue}`, { x: 620, y: 350, size: 42, font: fontBold });
-      page5.drawText('Investimento Global', { x: 620, y: 310, size: 16, font: fontBold });
-      page5.drawText('Valor total do projeto', { x: 620, y: 285, size: 12, font: fontReg });
+      drawCol(`R$ ${formatNumber(unitCost)}`, 'Investimento Unitário', 'Por cidadão beneficiado', 50);
+      drawCol(`${calculatedStudents.toLocaleString('pt-BR')}`, 'Total de Cidadãos', 'Cidadãos Beneficiados', 340);
+      drawCol(`R$ ${globalValue}`, 'Investimento Global', 'Valor total do projeto', 600);
 
-      // --- PÁGINAS FINAIS: CRONOGRAMA E NOTA JURÍDICA (COPIADAS) ---
-      // Copiamos as páginas originais 6, 7 e 10 (ajustando índices conforme as páginas que restaram)
-      const finalIndices = [5, 6, 9]; 
-      const copiedFinalPages = await pdfDoc.copyPages(externalDoc, finalIndices);
-      copiedFinalPages.forEach(p => pdfDoc.addPage(p));
+      // --- PÁGINAS FINAIS (COPIADAS) ---
+      const finalIndices = [5, 6, 9]; // Cronograma, Previsão e Nota Jurídica
+      const copiedFinals = await pdfDoc.copyPages(externalDoc, finalIndices);
+      copiedFinals.forEach(p => pdfDoc.addPage(p));
 
-      // --- SALVAR E ENVIAR ---
+      // --- ENVIO ---
       const pdfBytes = await pdfDoc.save();
       const base64String = btoa(new Uint8Array(pdfBytes).reduce((data, byte) => data + String.fromCharCode(byte), ''));
       const pdfBase64 = `data:application/pdf;base64,${base64String}`;
@@ -142,12 +135,12 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
         body: JSON.stringify({ pdfBase64, recipients: emails.filter(e => e.is_selected).map(e => e.email) }),
       });
 
-      if (res.ok) toast.success("Proposta Híbrida enviada!");
+      if (res.ok) toast.success("PDF enviado com sucesso!");
       else throw new Error();
 
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao gerar o PDF customizado.");
+      toast.error("Erro ao gerar PDF.");
     } finally {
       setLoading(false);
     }
@@ -196,7 +189,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       </List>
 
       <Button fullWidth variant="contained" disabled={loading || emails.filter(e => e.is_selected).length === 0} onClick={triggerCityPopup} startIcon={<SendIcon />} sx={{ bgcolor: '#9100ff', py: 2, fontWeight: 'bold' }}>
-        {loading ? "GERANDO DOCUMENTO..." : "ENVIAR PROPOSTA COMPLETA"}
+        {loading ? "GERANDO..." : "ENVIAR PROPOSTA COMPLETA"}
       </Button>
     </Paper>
   );
