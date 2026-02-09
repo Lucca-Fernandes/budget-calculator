@@ -82,11 +82,11 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       // LOGICA DA LOGO: Desenha a logo no lugar do texto roxo "DESENVOLVE"
       p1.drawImage(logoDevImg, { x: 50, y: 480, width: 200, height: 40 }); 
       
-      p1.drawText('SIMULAÇÃO DE VALORES E COTAÇÃO', { x: 50, y: 440, size: 36, font: fontBold });
+      p1.drawText('SIMULAÇÃO DE VALORES E COTAÇÃO', { x: 50, y: 430, size: 36, font: fontBold });
       p1.drawText('INICIAL', { x: 50, y: 395, size: 36, font: fontBold });
-      p1.drawText('PROJETO DESENVOLVE – PRODEMGE', { x: 50, y: 320, size: 20, font: fontBold });
-      p1.drawText(`UNIDADE: ${cityName.toUpperCase()}`, { x: 50, y: 280, size: 16, font: fontBold, color: PURPLE });
-      p1.drawText('Programa de Desenvolvimento Econômico e Transformação Social', { x: 50, y: 255, size: 12, font: fontReg, color: GRAY });
+      p1.drawText('PROJETO DESENVOLVE – PRODEMGE', { x: 50, y: 310, size: 20, font: fontBold });
+      p1.drawText(`UNIDADE: ${cityName.toUpperCase()}`, { x: 50, y: 270, size: 16, font: fontBold, color: PURPLE });
+      p1.drawText('Programa de Desenvolvimento Econômico e Transformação Social', { x: 50, y: 245, size: 12, font: fontReg, color: BLACK });
 
       // --- PÁGINA 2: INSTITUCIONAL (COPIADA) ---
       const [page2] = await pdfDoc.copyPages(externalDoc, [1]);
@@ -94,18 +94,18 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
 
       // --- PÁGINA 3: DIMENSIONAMENTO (LANDSCAPE - SEM QUADRO, SEM CICLOS) ---
       const p3 = pdfDoc.addPage([841.89, 595.28]);
-      p3.drawText('DESENVOLVE', { x: 50, y: 520, size: 18, font: fontBold, color: PURPLE });
-      p3.drawText('Dimensionamento', { x: 50, y: 480, size: 32, font: fontBold });
+      p3.drawText('Dimensionamento', { x: 50, y: 510, size: 18, font: fontBold, color: PURPLE });
+      p3.drawText('Trajetórias de Transformação', { x: 50, y: 480, size: 32, font: fontBold });
       
       const desc3 = `A implementação em ${cityName} está desenhada para um impacto de larga escala, estruturada para atender ao volume de demanda do município de forma organizada e sustentável.`;
-      p3.drawText(desc3, { x: 50, y: 430, size: 13, font: fontReg, maxWidth: 700 });
+      p3.drawText(desc3, { x: 50, y: 430, size: 14, font: fontReg, maxWidth: 700 });
 
       p3.drawText('Público Beneficiário', { x: 50, y: 360, size: 18, font: fontBold });
       p3.drawText(`Total de Cidadãos: ${calculatedStudents.toLocaleString('pt-BR')}`, { x: 50, y: 330, size: 22, font: fontBold, color: PURPLE });
 
       p3.drawText('Responsabilidade Municipal', { x: 50, y: 260, size: 18, font: fontBold });
       const respText = `Fornecimento de espaço físico adequado para credenciamento e funcionamento da "Unidade Polo" da Escola Desenvolve, servindo como centro de referência e apoio aos alunos.`;
-      p3.drawText(respText, { x: 50, y: 235, size: 13, font: fontReg, maxWidth: 650, lineHeight: 18 });
+      p3.drawText(respText, { x: 50, y: 235, size: 14, font: fontReg, maxWidth: 650, lineHeight: 18 });
 
       // --- PÁGINA 4: INSTITUCIONAL (COPIADA) ---
       const [page4] = await pdfDoc.copyPages(externalDoc, [3]);
@@ -115,8 +115,8 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       const unitCost = totalCost / calculatedStudents;
       const globalValue = totalCost >= 1000000 ? `${(totalCost/1000000).toFixed(2)}M` : formatNumber(totalCost);
 
-      p5.drawText('Engenharia Financeira', { x: 50, y: 520, size: 18, font: fontBold, color: PURPLE });
-      p5.drawText('Estrutura de Investimento Social', { x: 50, y: 480, size: 32, font: fontBold });
+      p5.drawText('Engenharia Financeira', { x: 50, y: 510, size: 18, font: fontBold, color: PURPLE });
+      p5.drawText('Estrutura de Investimento Social', { x: 50, y: 460, size: 32, font: fontBold });
       
       // NOVO TEXTO ADICIONADO ABAIXO DO TÍTULO
       p5.drawText('A engenharia financeira prevê o escalonamento das fases para otimização orçamentária.', { 
