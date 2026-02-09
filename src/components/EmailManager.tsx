@@ -53,66 +53,73 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
   };
 
   const generateAndSendPDF = async () => {
-    if (!cityName) return toast.warn("Informe a cidade");
-    setOpenCityPopup(false);
-    setLoading(true);
+  if (!cityName) return toast.warn("Informe o nome da Unidade/Cidade");
+  setOpenCityPopup(false);
+  setLoading(true);
+  
+  try {
+    const url = '/template.pdf'; 
+    const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
+    const externalDoc = await PDFDocument.load(existingPdfBytes);
     
-    try {
-      // 1. Carregar o template da raiz
-      const existingPdfBytes = await fetch('/template.pdf').then(res => res.arrayBuffer());
-      const externalDoc = await PDFDocument.load(existingPdfBytes);
-      const totalPages = externalDoc.getPageCount();
+    // Criar novo documento removendo páginas 8 e 9 (índices 7 e 8)
+    const pdfDoc = await PDFDocument.create();
+    const totalPages = externalDoc.getPageCount();
+    const allIndices = Array.from({ length: totalPages }, (_, i) => i);
+    const pageIndicesToKeep = allIndices.filter(idx => idx !== 7 && idx !== 8);
 
-      // 2. Criar novo documento e filtrar páginas (Removendo 8 e 9 -> índices 7 e 8)
-      const pdfDoc = await PDFDocument.create();
-      const allIndices = Array.from({ length: totalPages }, (_, i) => i);
-      const pageIndicesToKeep = allIndices.filter(idx => idx !== 7 && idx !== 8);
+    const copiedPages = await pdfDoc.copyPages(externalDoc, pageIndicesToKeep);
+    copiedPages.forEach((page) => pdfDoc.addPage(page));
 
-      const copiedPages = await pdfDoc.copyPages(externalDoc, pageIndicesToKeep);
-      copiedPages.forEach((page) => pdfDoc.addPage(page));
+    const pages = pdfDoc.getPages();
+    const firstPage = pages[0];
+    const { height } = firstPage.getSize();
 
-      // 3. Área de Edição de Variáveis
-      const pages = pdfDoc.getPages();
-      
-      // EXEMPLO: Edição na Capa (Página 1)
-      const firstPage = pages[0];
-      const { height } = firstPage.getSize();
-      
-      firstPage.drawText(`UNIDADE: ${cityName.toUpperCase()}`, {
-        x: 60, 
-        y: height - 150, // Ajustar conforme posição real do seu PDF
-        size: 18,
-        color: rgb(0.56, 0, 1), // Roxo Desenvolve
-      });
+    
+    firstPage.drawRectangle({
+      x: 55,           
+      y: height - 128, 
+      width: 200,      
+      height: 30,      
+      color: rgb(1, 1, 1), 
+    });
 
-      // --- Aqui inseriremos os dados de custo nas páginas seguintes conforme sua orientação ---
+    // 2. Escrever a cidade variável
+    firstPage.drawText(cityName.toUpperCase(), {
+      x: 60, 
+      y: height - 120, // Ajuste fino para alinhar com o "UNIDADE:"
+      size: 22,
+      color: rgb(0.57, 0, 1), // Roxo #9100ff
+    });
 
-      // 4. Finalização e Envio
-      const pdfBytes = await pdfDoc.save();
-      const base64String = btoa(
-        new Uint8Array(pdfBytes).reduce((data, byte) => data + String.fromCharCode(byte), '')
-      );
-      const pdfBase64 = `data:application/pdf;base64,${base64String}`;
+    // 3. (Opcional) Rodapé ou outras menções de cidade nas páginas internas
+    // Se houver "BETIM" em outras páginas, repetimos o processo de máscara + texto
 
-      const res = await fetch(`${API_URL}/send-budget`, {
-        method: 'POST',
-        headers: getAuthHeader(),
-        body: JSON.stringify({ 
-          pdfBase64, 
-          recipients: emails.filter(e => e.is_selected).map(e => e.email) 
-        }),
-      });
+    const pdfBytes = await pdfDoc.save();
+    const base64String = btoa(
+      new Uint8Array(pdfBytes).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
+    const pdfBase64 = `data:application/pdf;base64,${base64String}`;
 
-      if (res.ok) toast.success("Proposta enviada com sucesso!");
-      else throw new Error();
+    const res = await fetch(`${API_URL}/send-budget`, {
+      method: 'POST',
+      headers: getAuthHeader(),
+      body: JSON.stringify({ 
+        pdfBase64, 
+        recipients: emails.filter(e => e.is_selected).map(e => e.email) 
+      }),
+    });
 
-    } catch (err) {
-      console.error(err);
-      toast.error("Erro ao processar PDF. Verifique o arquivo template.pdf na pasta public.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (res.ok) toast.success(`Proposta para ${cityName} enviada!`);
+    else throw new Error();
+
+  } catch (err) {
+    console.error(err);
+    toast.error("Erro ao editar o template.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <Paper elevation={4} sx={{ mt: 4, p: 3, borderRadius: 2, borderTop: '5px solid #9100ff' }}>
