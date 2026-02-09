@@ -79,7 +79,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
 
       // --- PÁGINA 1: CAPA ---
       const p1 = pdfDoc.addPage([841.89, 595.28]);
-      p1.drawImage(logoDevImg, { x: 50, y: 480, width: 100, height: 50 }); // Logo Desenvolve no lugar do texto
+      p1.drawImage(logoDevImg, { x: 50, y: 480, width: 200, height: 40 }); // Logo Desenvolve no lugar do texto
       p1.drawText('SIMULAÇÃO DE VALORES E COTAÇÃO', { x: 50, y: 400, size: 36, font: fontBold });
       p1.drawText('INICIAL', { x: 50, y: 355, size: 36, font: fontBold });
       p1.drawText('PROJETO DESENVOLVE – PRODEMGE', { x: 50, y: 280, size: 20, font: fontBold });
@@ -92,7 +92,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
 
       // --- PÁGINA 3: DIMENSIONAMENTO ---
       const p3 = pdfDoc.addPage([841.89, 595.28]);
-      p3.drawImage(logoTopoImg, { x: 50, y: 860, width: 35, height: 35 }); // Logo Topo Esquerdo
+      p3.drawImage(logoTopoImg, { x: 50, y: 700, width: 35, height: 35 }); // Logo Topo Esquerdo
       p3.drawText('Dimensionamento', { x: 50, y: 480, size: 32, font: fontBold });
       p3.drawText(`A implementação em ${cityName} está desenhada para um impacto de larga escala.`, { x: 50, y: 430, size: 13, font: fontReg, maxWidth: 700 });
       p3.drawText('Público Beneficiário', { x: 50, y: 360, size: 18, font: fontBold });
