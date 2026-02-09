@@ -53,73 +53,97 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
   };
 
   const generateAndSendPDF = async () => {
-  if (!cityName) return toast.warn("Informe o nome da Unidade/Cidade");
-  setOpenCityPopup(false);
-  setLoading(true);
-  
-  try {
-    const url = '/template.pdf'; 
-    const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
-    const externalDoc = await PDFDocument.load(existingPdfBytes);
+    if (!cityName) return toast.warn("Informe o nome da Unidade/Cidade");
+    setOpenCityPopup(false);
+    setLoading(true);
     
-    // Criar novo documento removendo páginas 8 e 9 (índices 7 e 8)
-    const pdfDoc = await PDFDocument.create();
-    const totalPages = externalDoc.getPageCount();
-    const allIndices = Array.from({ length: totalPages }, (_, i) => i);
-    const pageIndicesToKeep = allIndices.filter(idx => idx !== 7 && idx !== 8);
+    try {
+      const url = '/template.pdf'; 
+      const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
+      const externalDoc = await PDFDocument.load(existingPdfBytes);
+      
+      const pdfDoc = await PDFDocument.create();
+      const totalPages = externalDoc.getPageCount();
+      const allIndices = Array.from({ length: totalPages }, (_, i) => i);
+      
+      // Removendo páginas 8 e 9 (índices 7 e 8)
+      const pageIndicesToKeep = allIndices.filter(idx => idx !== 7 && idx !== 8);
 
-    const copiedPages = await pdfDoc.copyPages(externalDoc, pageIndicesToKeep);
-    copiedPages.forEach((page) => pdfDoc.addPage(page));
+      const copiedPages = await pdfDoc.copyPages(externalDoc, pageIndicesToKeep);
+      copiedPages.forEach((page) => pdfDoc.addPage(page));
 
-    const pages = pdfDoc.getPages();
-    const firstPage = pages[0];
-    const { height } = firstPage.getSize();
+      const pages = pdfDoc.getPages();
 
-    
-    firstPage.drawRectangle({
-      x: 55,           
-      y: height - 128, 
-      width: 200,      
-      height: 30,      
-      color: rgb(1, 1, 1), 
-    });
+      // --- 1. AJUSTE NA CAPA (Página 1) ---
+      const firstPage = pages[0];
+      const { height: h1 } = firstPage.getSize();
 
-    // 2. Escrever a cidade variável
-    firstPage.drawText(cityName.toUpperCase(), {
-      x: 60, 
-      y: height - 120, // Ajuste fino para alinhar com o "UNIDADE:"
-      size: 22,
-      color: rgb(0.57, 0, 1), // Roxo #9100ff
-    });
+      // "Apaga" o BETIM original com um retângulo branco
+      firstPage.drawRectangle({
+        x: 35, 
+        y: h1 - 135,
+        width: 250,
+        height: 40,
+        color: rgb(1, 1, 1),
+      });
 
-    // 3. (Opcional) Rodapé ou outras menções de cidade nas páginas internas
-    // Se houver "BETIM" em outras páginas, repetimos o processo de máscara + texto
+      // Escreve a nova cidade
+      firstPage.drawText(`UNIDADE: ${cityName.toUpperCase()}`, {
+        x: 40,
+        y: h1 - 120,
+        size: 22,
+        color: rgb(0.57, 0, 1), // Roxo #9100ff
+      });
 
-    const pdfBytes = await pdfDoc.save();
-    const base64String = btoa(
-      new Uint8Array(pdfBytes).reduce((data, byte) => data + String.fromCharCode(byte), '')
-    );
-    const pdfBase64 = `data:application/pdf;base64,${base64String}`;
+      // --- 2. AJUSTE NO RITO DE FORMALIZAÇÃO (Página 9 original, agora Página 7) ---
+      // Caso queira remover menções a "Betim" no corpo do texto da página 7:
+      if (pages[6]) {
+        const formalizationPage = pages[6];
+        const { height: h7 } = formalizationPage.getSize();
+        
+        // Cobre a linha que menciona o município no rito
+        formalizationPage.drawRectangle({
+          x: 40,
+          y: h7 - 350, 
+          width: 300,
+          height: 50,
+          color: rgb(1, 1, 1),
+        });
 
-    const res = await fetch(`${API_URL}/send-budget`, {
-      method: 'POST',
-      headers: getAuthHeader(),
-      body: JSON.stringify({ 
-        pdfBase64, 
-        recipients: emails.filter(e => e.is_selected).map(e => e.email) 
-      }),
-    });
+        formalizationPage.drawText(`do Município de ${cityName}`, {
+          x: 45,
+          y: h7 - 335,
+          size: 11,
+          color: rgb(0.2, 0.2, 0.2),
+        });
+      }
 
-    if (res.ok) toast.success(`Proposta para ${cityName} enviada!`);
-    else throw new Error();
+      // --- 3. CONVERSÃO E ENVIO ---
+      const pdfBytes = await pdfDoc.save();
+      const base64String = btoa(
+        new Uint8Array(pdfBytes).reduce((data, byte) => data + String.fromCharCode(byte), '')
+      );
+      const pdfBase64 = `data:application/pdf;base64,${base64String}`;
 
-  } catch (err) {
-    console.error(err);
-    toast.error("Erro ao editar o template.");
-  } finally {
-    setLoading(false);
-  }
-};
+      const res = await fetch(`${API_URL}/send-budget`, {
+        method: 'POST',
+        headers: getAuthHeader(),
+        body: JSON.stringify({ 
+          pdfBase64, 
+          recipients: emails.filter(e => e.is_selected).map(e => e.email) 
+        }),
+      });
+
+      if (res.ok) toast.success(`Proposta para ${cityName} enviada com sucesso!`);
+      else throw new Error();
+
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao editar ou enviar o PDF.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Paper elevation={4} sx={{ mt: 4, p: 3, borderRadius: 2, borderTop: '5px solid #9100ff' }}>
@@ -128,7 +152,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       <Dialog open={openCityPopup} onClose={() => !loading && setOpenCityPopup(false)} fullWidth maxWidth="xs">
         <DialogTitle sx={{ fontFamily: 'Conthrax', color: '#9100ff' }}>Personalizar Proposta</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" sx={{ mb: 2 }}>Nome da Unidade para o PDF:</Typography>
+          <Typography variant="body2" sx={{ mb: 2 }}>Informe a cidade para a capa do documento:</Typography>
           <TextField
             autoFocus fullWidth variant="outlined" label="Cidade"
             value={cityName} onChange={(e) => setCityName(e.target.value)}
