@@ -67,6 +67,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       const fontReg = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const PURPLE = rgb(0.57, 0, 1);
       const GRAY = rgb(0.4, 0.4, 0.4);
+      const BLACK = rgb(0, 0, 0);
 
       // --- PÁGINA 1: CAPA (LANDSCAPE) ---
       const p1 = pdfDoc.addPage([841.89, 595.28]);
@@ -110,10 +111,10 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       // NOVO TEXTO ADICIONADO ABAIXO DO TÍTULO
       p5.drawText('A engenharia financeira prevê o escalonamento das fases para otimização orçamentária.', { 
         x: 50, 
-        y: 420, 
+        y: 4, 
         size: 18, 
         font: fontReg, 
-        color: GRAY 
+        color: BLACK 
       });
 
       // Layout de Colunas (Ajustado levemente o Y para não sobrepor o novo texto)
