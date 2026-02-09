@@ -100,19 +100,27 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       const [page4] = await pdfDoc.copyPages(externalDoc, [3]);
       pdfDoc.addPage(page4);
 
-      // --- PÁGINA 5: ENGENHARIA FINANCEIRA (LANDSCAPE - DADOS CALCULADORA) ---
       const p5 = pdfDoc.addPage([841.89, 595.28]);
       const unitCost = totalCost / calculatedStudents;
       const globalValue = totalCost >= 1000000 ? `${(totalCost/1000000).toFixed(2)}M` : formatNumber(totalCost);
 
       p5.drawText('Engenharia Financeira', { x: 50, y: 520, size: 18, font: fontBold, color: PURPLE });
       p5.drawText('Estrutura de Investimento Social', { x: 50, y: 480, size: 32, font: fontBold });
+      
+      // NOVO TEXTO ADICIONADO ABAIXO DO TÍTULO
+      p5.drawText('A engenharia financeira prevê o escalonamento das fases para otimização orçamentária.', { 
+        x: 50, 
+        y: 455, 
+        size: 12, 
+        font: fontReg, 
+        color: GRAY 
+      });
 
-      // Layout de Colunas
+      // Layout de Colunas (Ajustado levemente o Y para não sobrepor o novo texto)
       const drawCol = (val: string, label: string, sub: string, x: number) => {
-        p5.drawText(val, { x, y: 350, size: 40, font: fontBold, color: PURPLE });
-        p5.drawText(label, { x, y: 310, size: 16, font: fontBold });
-        p5.drawText(sub, { x, y: 290, size: 11, font: fontReg, color: GRAY });
+        p5.drawText(val, { x, y: 340, size: 40, font: fontBold, color: PURPLE });
+        p5.drawText(label, { x, y: 300, size: 16, font: fontBold });
+        p5.drawText(sub, { x, y: 280, size: 11, font: fontReg, color: GRAY });
       };
 
       drawCol(`R$ ${formatNumber(unitCost)}`, 'Investimento Unitário', 'Por cidadão beneficiado', 50);
