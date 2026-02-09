@@ -25,8 +25,7 @@ interface EmailManagerProps {
 }
 
 export const EmailManager: React.FC<EmailManagerProps> = ({
-  calculatedStudents, totalCost, entryFee, formatNumber
-}) => {
+  }) => {
   const [emails, setEmails] = useState<any[]>([]);
   const [newEmail, setNewEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -77,51 +76,52 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
   };
 
   const generateAndSendPDF = async () => {
-  if (!cityName) return toast.warn("Informe a cidade");
+  if (!cityName) return toast.warn("Informe o nome da Unidade/Cidade");
+  
+  setOpenCityPopup(false);
   setLoading(true);
-
+  
   try {
-    // 1. Carregar o PDF padrão da raiz (pasta public)
-    const existingPdfBytes = await fetch('/template.pdf').then(res => res.arrayBuffer());
+    // 1. Carrega o PDF padrão da pasta public
+    const url = '/template.pdf'; 
+    const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
+    const externalDoc = await PDFDocument.load(existingPdfBytes);
+    
+    // 2. Cria um NOVO documento onde colaremos apenas as páginas desejadas
+    const pdfDoc = await PDFDocument.create();
+    
+    // 3. Seleciona as páginas que queremos manter
+    // Se o original tem 13 páginas e queremos tirar a 8 e a 9:
+    // Mantemos: 1-7 (índices 0-6) e 10 até o fim (índices 9 em diante)
+    const pageIndicesToKeep = [0, 1, 2, 3, 4, 5, 6, 9, 10, 11, 12]; // Ajuste conforme o total de páginas
+    
+    const copiedPages = await pdfDoc.copyPages(externalDoc, pageIndicesToKeep);
+    copiedPages.forEach((page) => pdfDoc.addPage(page));
 
-    // 2. Carregar o documento
-    const pdfDoc = await PDFDocument.load(existingPdfBytes);
+    // --- ÁREA PREPARADA PARA VARIÁVEIS ---
     const pages = pdfDoc.getPages();
-    
-    // 3. Editar a PRIMEIRA PÁGINA (Capa)
-    const firstPage = pages[0];
-    const {  height } = firstPage.getSize();
+    const firstPage = pages[0]; // Capa
+    const { height } = firstPage.getSize();
 
-    firstPage.drawText(cityName.toUpperCase(), {
+    // Exemplo de como mudaremos a Unidade na Capa (ajustaremos X e Y depois)
+    firstPage.drawText(`UNIDADE: ${cityName.toUpperCase()}`, {
       x: 20, 
-      y: height - 125,
+      y: height - 125, 
       size: 14,
-      color: rgb(0.57, 0, 1), 
+      color: rgb(0.57, 0, 1), // Roxo #9100ff
     });
+    // ---------------------------------------
 
-    
-    const budgetPage = pages[7]; 
-    
-    const drawTableText = (text: string, x: number, y: number) => {
-        budgetPage.drawText(text, { x, y, size: 10, color: rgb(0.1, 0.1, 0.1) });
-    };
-
-    // Exemplo de preenchimento dos dados variáveis sobre o PDF original
-    drawTableText(`${calculatedStudents}`, 150, height - 52); 
-    drawTableText(`R$ ${formatNumber(totalCost)}`, 150, height - 60);
-    drawTableText(`R$ ${formatNumber(entryFee)}`, 150, height - 68);
-
-    // 5. Finalizar o PDF
+    // 4. Finalização e Envio
     const pdfBytes = await pdfDoc.save();
     
-    // Converter para Base64 para enviar ao backend
+    // Converte para Base64
     const base64String = btoa(
       new Uint8Array(pdfBytes)
         .reduce((data, byte) => data + String.fromCharCode(byte), '')
     );
     const pdfBase64 = `data:application/pdf;base64,${base64String}`;
 
-    // 6. Enviar
     const res = await fetch(`${API_URL}/send-budget`, {
       method: 'POST',
       headers: getAuthHeader(),
@@ -131,15 +131,17 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       }),
     });
 
-    if (res.ok) toast.success("PDF editado e enviado com sucesso!");
-    else throw new Error();
+    if (res.ok) {
+      toast.success("PDF editado (páginas removidas) e enviado!");
+    } else {
+      throw new Error();
+    }
 
   } catch (err) {
     console.error(err);
-    toast.error("Erro ao processar template de PDF.");
+    toast.error("Erro ao processar o template do PDF.");
   } finally {
     setLoading(false);
-    setOpenCityPopup(false);
   }
 };
 
