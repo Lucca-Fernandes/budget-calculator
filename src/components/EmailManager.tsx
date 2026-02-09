@@ -91,10 +91,11 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       pdfDoc.addPage(page2);
 
       // --- PÁGINA 3: DIMENSIONAMENTO ---
-      const p3 = pdfDoc.addPage([841.89, 595.28]);
+const p3 = pdfDoc.addPage([841.89, 595.28]);
+const { height: p3Height } = p3.getSize();      
 p3.drawImage(logoTopoImg, { 
   x: 50, 
-  y: 530, 
+  y: p3Height - 60, // Usa a altura real da página menos 60 (topo)
   width: 35, 
   height: 35 
 });      p3.drawText('Dimensionamento', { x: 50, y: 480, size: 32, font: fontBold });
