@@ -139,25 +139,30 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       drawCol(`R$ ${globalValue}`, 'Investimento Global', 'Valor total do projeto', 600);
 
       // --- PÁGINA 7: PREVISÃO ORÇAMENTÁRIA (DADOS REAIS + GRÁFICO) ---
+      // --- PÁGINA 7: PREVISÃO ORÇAMENTÁRIA (ORDEM CORRIGIDA + TEXTOS COMPLETOS) ---
       const p7 = pdfDoc.addPage([841.89, 595.28]);
-
+      
       p7.drawText('DESENVOLVE', { x: 50, y: 520, size: 18, font: fontBold, color: PURPLE });
       p7.drawText('Previsão Orçamentária', { x: 50, y: 480, size: 32, font: fontBold });
       p7.drawText('Distribuição por Exercício Fiscal', { x: 50, y: 445, size: 18, font: fontBold });
+      p7.drawText('Planejamento financeiro dividido por ano para facilitar o processo orçamentário municipal.', { x: 50, y: 420, size: 12, font: fontReg, color: GRAY });
 
-      // --- LÓGICA DO GRÁFICO ---
+      // Título da legenda do gráfico
+      p7.drawText('Distribuição Anual', { x: 450, y: 380, size: 14, font: fontBold, color: BLACK });
+
+      // Lógica do Gráfico e Listagem
       const chartX = 450;
       const chartY = 150;
-      const maxBarHeight = 200;
-      // Encontra o maior valor para escalar as barras
+      const maxBarHeight = 180;
       const maxTotal = Math.max(...yearlyPayments.map(i => i.total));
 
+      let listY = 350;
       yearlyPayments.forEach((item, index) => {
         const barHeight = (item.total / maxTotal) * maxBarHeight;
-        const barWidth = 40;
-        const spacing = 70;
-
-        // Desenha a barra
+        const barWidth = 45;
+        const spacing = 80;
+        
+        // Desenha a barra do gráfico
         p7.drawRectangle({
           x: chartX + (index * spacing),
           y: chartY,
@@ -166,32 +171,39 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
           color: PURPLE,
         });
 
-        // Texto do Ano abaixo da barra
+        // Ano abaixo da barra
         p7.drawText(item.year.toString(), {
-          x: chartX + (index * spacing),
+          x: chartX + (index * spacing) + 5,
           y: chartY - 20,
           size: 12,
           font: fontBold,
+          color: BLACK
         });
 
-        // Valor real ao lado (Listagem)
+        // Listagem à esquerda (Igual à imagem)
         p7.drawText(`• Ano ${item.year}: R$ ${formatNumber(item.total)}`, {
-          x: 70,
-          y: 350 - (index * 30),
+          x: 50,
+          y: listY,
           size: 16,
           font: fontBold,
-          color: rgb(0, 0, 0)
+          color: BLACK
         });
+        listY -= 35;
       });
 
-      const totalExecucao = `Total de ${totalMonthlyParcels + 2} meses de execução, com valores reais de desembolso.`;
-      p7.drawText(totalExecucao, { x: 50, y: 100, size: 12, font: fontReg, color: GRAY });
+      // Texto de conclusão abaixo da lista
+      const totalExecText = `Total de ${totalMonthlyParcels + 2} meses de execução, com concentração`;
+      const totalExecText2 = `de investimentos nos primeiros dois anos.`;
+      p7.drawText(totalExecText, { x: 50, y: listY - 20, size: 12, font: fontReg, color: GRAY });
+      p7.drawText(totalExecText2, { x: 50, y: listY - 35, size: 12, font: fontReg, color: GRAY });
 
-      // --- PÁGINAS FINAIS (CORRIGIDO PARA REMOVER A PÁGINA 7 ANTIGA) ---
-      // Mudamos de [5, 6, 9] para [5, 9] (índice 5 é cronograma, 9 é nota jurídica)
-      // O índice 6 era a página 7 antiga que foi removida.
-      const finalIndices = [5, 9];
+      // --- PÁGINAS FINAIS (ORDEM INVERTIDA CONFORME PEDIDO) ---
+      // Pegamos apenas o Cronograma (5) e a Nota Jurídica (9). 
+      // O índice 6 (Página 7 antiga) foi totalmente descartado.
+      const finalIndices = [5, 9]; 
       const copiedFinals = await pdfDoc.copyPages(externalDoc, finalIndices);
+      
+      // Adiciona as páginas copiadas DEPOIS da nossa nova página de orçamento real
       copiedFinals.forEach(p => pdfDoc.addPage(p));
 
       // --- ENVIO ---
