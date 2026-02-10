@@ -48,7 +48,6 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
   useEffect(() => { fetchEmails(); }, []);
 
   const triggerCityPopup = () => {
-    if (emails.filter(e => e.is_selected).length === 0) return toast.warn("Selecione os destinatários!");
     setOpenCityPopup(true);
   };
 
