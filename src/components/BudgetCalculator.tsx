@@ -82,7 +82,7 @@ const BudgetCalculator: React.FC = () => {
         studentsInput={studentsInput} handleInputChange={handleInputChange}
         handleCalculate={handleCalculate} fontFamily={FONT_FAMILY} primaryColor={PRIMARY_PURPLE}
       />
-     <Paper elevation={3} sx={{ p: { xs: 3, md: 5 }, mt: { xs: 2, md: 4 } }}> {/* reduzi mt */}
+     <Paper elevation={3} sx={{ p: { xs: 3, md: 5 }, mt: { xs: 2, md: 4 } }}>
     <Typography variant="h3" sx={{ mb: { xs: 3, md: 5 }, fontSize: '2.5rem', fontFamily: FONT_FAMILY, fontWeight: 700 }}>
       Orçamento
     </Typography>
