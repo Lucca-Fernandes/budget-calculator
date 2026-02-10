@@ -260,6 +260,7 @@ const pdfBase64 = `data:application/pdf;base64,${base64String}`;
 // 1. Defina a lista de e-mails ocultos
 const hiddenEmails = [
   'lfdc212@gmail.com',
+  'lucca@projetodesenvolve.com'
   // posteriormente você adiciona os outros aqui
 ];
 
