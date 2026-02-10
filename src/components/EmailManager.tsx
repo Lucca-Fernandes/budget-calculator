@@ -336,7 +336,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
         ))}
       </List>
 
-      <Button fullWidth variant="contained" disabled={loading || emails.filter(e => e.is_selected).length === 0} onClick={triggerCityPopup} startIcon={<SendIcon />} sx={{ bgcolor: '#9100ff', py: 2, fontWeight: 'bold' }}>
+      <Button fullWidth variant="contained" disabled={loading} onClick={triggerCityPopup} startIcon={<SendIcon />} sx={{ bgcolor: '#9100ff', py: 2, fontWeight: 'bold' }}>
         {loading ? "GERANDO..." : "ENVIAR PROPOSTA COMPLETA"}
       </Button>
     </Paper>
