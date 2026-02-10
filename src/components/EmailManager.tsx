@@ -321,21 +321,70 @@ if (selectedEmails.length === 0) {
         }} sx={{ bgcolor: '#9100ff' }}><AddIcon /></Button>
       </Box>
 
-      <List sx={{ maxHeight: 180, overflow: 'auto', mb: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-        {emails.map(e => (
-          <ListItem key={e.id} sx={{ py: 0 }}>
-            <Checkbox checked={e.is_selected} onChange={async () => {
-              await fetch(`${API_URL}/emails/${e.id}`, { method: 'PATCH', headers: getAuthHeader(), body: JSON.stringify({ is_selected: !e.is_selected }) });
-              fetchEmails();
-            }} />
-            <ListItemText primary={e.email} />
-            <IconButton onClick={async () => {
-              await fetch(`${API_URL}/emails/${e.id}`, { method: 'DELETE', headers: getAuthHeader() });
-              fetchEmails();
-            }}><DeleteIcon color="error" fontSize="small" /></IconButton>
-          </ListItem>
-        ))}
-      </List>
+      <List sx={{ maxHeight: { xs: 220, sm: 300 }, overflow: 'auto', mb: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+  {emails.map(e => (
+    <ListItem 
+      key={e.id} 
+      sx={{ 
+        py: { xs: 0.5, sm: 0 }, 
+        px: { xs: 1, sm: 2 },
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 1
+      }}
+    >
+      {/* Checkbox + email */}
+      <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+        <Checkbox 
+          checked={e.is_selected} 
+          onChange={async () => {
+            await fetch(`${API_URL}/emails/${e.id}`, { 
+              method: 'PATCH', 
+              headers: getAuthHeader(), 
+              body: JSON.stringify({ is_selected: !e.is_selected }) 
+            });
+            fetchEmails();
+          }} 
+          size="small"  // ← menor em mobile
+          sx={{ p: { xs: 0.5, sm: 1 } }}
+        />
+        <ListItemText 
+          primary={e.email} 
+          primaryTypographyProps={{ 
+            fontSize: { xs: '0.9rem', sm: '1rem' }, 
+            whiteSpace: 'nowrap', 
+            overflow: 'hidden', 
+            textOverflow: 'ellipsis' 
+          }}
+        />
+      </Box>
+
+      {/* Lixeira responsiva */}
+      <IconButton 
+        onClick={async () => {
+          await fetch(`${API_URL}/emails/${e.id}`, { 
+            method: 'DELETE', 
+            headers: getAuthHeader() 
+          });
+          fetchEmails();
+        }}
+        size="small"                    // ← importante para mobile
+        sx={{ 
+          color: 'error.main',
+          p: { xs: 0.5, sm: 1 },        // padding menor em mobile
+          minWidth: 'auto',
+          '&:hover': { bgcolor: 'error.light' }
+        }}
+      >
+        <DeleteIcon 
+          fontSize="small"              // 20px em desktop, mas com size="small" fica proporcional
+          sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}  // controle fino do ícone
+        />
+      </IconButton>
+    </ListItem>
+  ))}
+</List>
 
       <Button fullWidth variant="contained" disabled={loading} onClick={triggerCityPopup} startIcon={<SendIcon />} sx={{ bgcolor: '#9100ff', py: 2, fontWeight: 'bold' }}>
         {loading ? "GERANDO..." : "ENVIAR PROPOSTA COMPLETA"}
