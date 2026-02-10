@@ -129,7 +129,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
 
       // Layout de Colunas (Ajustado levemente o Y para não sobrepor o novo texto)
       const drawCol = (val: string, label: string, sub: string, x: number) => {
-        p5.drawText(val, { x, y: 340, size: 40, font: fontBold, color: PURPLE });
+        p5.drawText(val, { x, y: 340, size: 40, font: fontBold, color: BLACK });
         p5.drawText(label, { x, y: 300, size: 16, font: fontBold });
         p5.drawText(sub, { x, y: 280, size: 11, font: fontReg, color: GRAY });
       };
@@ -186,12 +186,6 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       
       p6.drawText('Atividades: Gestão educacional, suporte contínuo,', { x: 455, y: boxesY + 30, size: 10, font: fontReg, color: GRAY });
       p6.drawText('manutenção e certificação dos alunos.', { x: 455, y: boxesY + 18, size: 10, font: fontReg, color: GRAY });
-
-      // Garante que a Nota Jurídica venha depois desta página
-      const [lastPage] = await pdfDoc.copyPages(externalDoc, [8]); 
-      pdfDoc.addPage(lastPage);
-
-
 
       const p7 = pdfDoc.addPage([841.89, 595.28]);
       
