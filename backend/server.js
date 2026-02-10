@@ -142,10 +142,10 @@ app.post('/send-budget', verifyJWT, async (req, res) => {
     const senderEmail = process.env.SMTP2GO_SENDER_EMAIL || 'orcamentos@projetodesenvolve.com.br';
     const senderName = process.env.SMTP2GO_SENDER_NAME || 'Equipe Desenvolve';
 
-    // Payload para a API do SMTP2GO
+    // Payload para a API do SMTP2GO (corrigido: fileblob em vez de file_blob, to como array de strings)
     const payload = {
       api_key: apiKey,
-      to: allRecipients.map(email => ({ email })),
+      to: allRecipients,  // array de strings, não objetos
       sender: senderEmail,
       from_name: senderName,
       subject: 'Proposta Institucional - Projeto Desenvolve',
@@ -159,9 +159,9 @@ app.post('/send-budget', verifyJWT, async (req, res) => {
       `,
       attachments: [
         {
-          filename: 'Proposta_Desenvolve.pdf', 
-          file_blob: pdfContent,
-          mime_type: 'application/pdf'
+          filename: 'Proposta_Desenvolve.pdf',
+          fileblob: pdfContent,  // ← CORRIGIDO: fileblob (sem underscore)
+          mimetype: 'application/pdf'  // alterado para mimetype, conforme exemplos
         }
       ]
     };
