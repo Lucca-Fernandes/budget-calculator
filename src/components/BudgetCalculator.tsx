@@ -24,7 +24,7 @@ const BudgetCalculator: React.FC = () => {
     const cleanString = studentsInput.replace(/\D/g, '');
     setCalculatedStudents(parseInt(cleanString, 10) || 0);
   };
-//hujsd
+//hujsd  //sds
   const formatNumber = (value: number): string => {
     const [integerPart, decimalPart] = value.toFixed(2).split('.');
     return `${integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.')},${decimalPart}`;
