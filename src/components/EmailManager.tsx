@@ -139,20 +139,57 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       drawCol(`R$ ${globalValue}`, 'Investimento Global', 'Valor total do projeto', 600);
 
       
-
-// --- PÁGINA 7: CRONOGRAMA (PENÚLTIMA TELA - OS DOIS QUADROS REAIS) ---
+      // --- PÁGINA 6: CRONOGRAMA (PENÚLTIMA TELA - FLUXO FINANCEIRO) ---
       const p6 = pdfDoc.addPage([841.89, 595.28]);
-      p6.drawText('Cronograma de Desembolso', { x: 50, y: 480, size: 32, font: fontBold });
       
-      // QUADRO FASE 1
-      p6.drawRectangle({ x: 50, y: 250, width: 350, height: 150, borderColor: PURPLE, borderWidth: 2, opacity: 0.1, color: PURPLE });
-      p6.drawText('FASE 1: IMPLEMENTAÇÃO', { x: 65, y: 375, size: 14, font: fontBold, color: PURPLE });
-      p6.drawText(`Investimento: 2x parcelas de R$ ${formatNumber(entryFee)}`, { x: 65, y: 325, size: 12, font: fontReg });
+      // Cabeçalho conforme solicitado
+      p6.drawText('Fluxo Financeiro', { x: 50, y: 520, size: 18, font: fontBold, color: PURPLE });
+      p6.drawText('Desembolso Mensal Consolidado', { x: 50, y: 480, size: 32, font: fontBold });
+      p6.drawText('Cronograma detalhado de desembolsos mensais para garantir execução eficiente do projeto.', { 
+        x: 50, 
+        y: 445, 
+        size: 14, 
+        font: fontReg, 
+        color: GRAY 
+      });
 
-      // QUADRO FASE 2
-      p6.drawRectangle({ x: 440, y: 250, width: 350, height: 150, borderColor: PURPLE, borderWidth: 2, opacity: 0.1, color: PURPLE });
-      p6.drawText('FASE 2: OPERAÇÃO PLENA', { x: 455, y: 375, size: 14, font: fontBold, color: PURPLE });
-      p6.drawText(`Investimento: ${totalMonthlyParcels}x parcelas de R$ ${formatNumber(monthlyPayment)}`, { x: 455, y: 325, size: 12, font: fontReg });
+      const boxWidth = 350;
+      const boxHeight = 160;
+      const boxesY = 220;
+
+      // --- QUADRO FASE 1: IMPLEMENTAÇÃO ---
+      p6.drawRectangle({ 
+        x: 50, y: boxesY, width: boxWidth, height: boxHeight, 
+        borderColor: PURPLE, borderWidth: 2, opacity: 0.1, color: PURPLE 
+      });
+      
+      p6.drawText('FASE 1: IMPLEMENTAÇÃO', { x: 65, y: boxesY + 130, size: 16, font: fontBold, color: PURPLE });
+      
+      // Detalhamento solicitado: 1° e 2° mês individualmente
+      p6.drawText(`1º Mês: R$ ${formatNumber(entryFee)}`, { x: 65, y: boxesY + 95, size: 14, font: fontBold });
+      p6.drawText(`2º Mês: R$ ${formatNumber(entryFee)}`, { x: 65, y: boxesY + 70, size: 14, font: fontBold });
+      
+      p6.drawText('Atividades: Setup tecnológico, mobilização de equipe', { x: 65, y: boxesY + 30, size: 10, font: fontReg, color: GRAY });
+      p6.drawText('e infraestrutura inicial.', { x: 65, y: boxesY + 18, size: 10, font: fontReg, color: GRAY });
+
+      // --- QUADRO FASE 2: OPERAÇÃO ---
+      p6.drawRectangle({ 
+        x: 440, y: boxesY, width: boxWidth, height: boxHeight, 
+        borderColor: PURPLE, borderWidth: 2, opacity: 0.1, color: PURPLE 
+      });
+      
+      p6.drawText('FASE 2: OPERAÇÃO PLENA', { x: 455, y: boxesY + 130, size: 16, font: fontBold, color: PURPLE });
+      
+      // Detalhamento solicitado: 24x parcelas
+      p6.drawText(`${totalMonthlyParcels}x parcelas mensais de:`, { x: 455, y: boxesY + 95, size: 13, font: fontReg });
+      p6.drawText(`R$ ${formatNumber(monthlyPayment)}`, { x: 455, y: boxesY + 65, size: 22, font: fontBold, color: BLACK });
+      
+      p6.drawText('Atividades: Gestão educacional, suporte contínuo,', { x: 455, y: boxesY + 30, size: 10, font: fontReg, color: GRAY });
+      p6.drawText('manutenção e certificação dos alunos.', { x: 455, y: boxesY + 18, size: 10, font: fontReg, color: GRAY });
+
+      // Garante que a Nota Jurídica venha depois desta página
+      const [lastPage] = await pdfDoc.copyPages(externalDoc, [8]); 
+      pdfDoc.addPage(lastPage);
 
 
 
