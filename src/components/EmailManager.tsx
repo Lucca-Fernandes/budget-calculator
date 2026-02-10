@@ -138,19 +138,19 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       drawCol(`${calculatedStudents.toLocaleString('pt-BR')}`, 'Total de Cidadãos', 'Cidadãos Beneficiados', 340);
       drawCol(`R$ ${globalValue}`, 'Investimento Global', 'Valor total do projeto', 600);
 
-      
+
       // --- PÁGINA 6: CRONOGRAMA (PENÚLTIMA TELA - FLUXO FINANCEIRO) ---
       const p6 = pdfDoc.addPage([841.89, 595.28]);
-      
+
       // Cabeçalho conforme solicitado
       p6.drawText('Fluxo Financeiro', { x: 50, y: 520, size: 18, font: fontBold, color: PURPLE });
       p6.drawText('Desembolso Mensal Consolidado', { x: 50, y: 480, size: 32, font: fontBold });
-      p6.drawText('Cronograma detalhado de desembolsos mensais para garantir execução eficiente do projeto.', { 
-        x: 50, 
-        y: 445, 
-        size: 14, 
-        font: fontReg, 
-        color: GRAY 
+      p6.drawText('Cronograma detalhado de desembolsos mensais para garantir execução eficiente do projeto.', {
+        x: 50,
+        y: 445,
+        size: 14,
+        font: fontReg,
+        color: GRAY
       });
 
       const boxWidth = 350;
@@ -158,37 +158,37 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       const boxesY = 220;
 
       // --- QUADRO FASE 1: IMPLEMENTAÇÃO ---
-      p6.drawRectangle({ 
-        x: 50, y: boxesY, width: boxWidth, height: boxHeight, 
-        borderColor: PURPLE, borderWidth: 2, opacity: 0.1, color: PURPLE 
+      p6.drawRectangle({
+        x: 50, y: boxesY, width: boxWidth, height: boxHeight,
+        borderColor: PURPLE, borderWidth: 2, opacity: 0.1, color: PURPLE
       });
-      
+
       p6.drawText('FASE 1: IMPLEMENTAÇÃO', { x: 65, y: boxesY + 130, size: 16, font: fontBold, color: PURPLE });
-      
+
       // Detalhamento solicitado: 1° e 2° mês individualmente
       p6.drawText(`1º Mês: R$ ${formatNumber(entryFee)}`, { x: 65, y: boxesY + 95, size: 14, font: fontBold });
       p6.drawText(`2º Mês: R$ ${formatNumber(entryFee)}`, { x: 65, y: boxesY + 70, size: 14, font: fontBold });
-      
+
       p6.drawText('Atividades: Setup tecnológico, mobilização de equipe', { x: 65, y: boxesY + 30, size: 10, font: fontReg, color: GRAY });
       p6.drawText('e infraestrutura inicial.', { x: 65, y: boxesY + 18, size: 10, font: fontReg, color: GRAY });
 
       // --- QUADRO FASE 2: OPERAÇÃO ---
-      p6.drawRectangle({ 
-        x: 440, y: boxesY, width: boxWidth, height: boxHeight, 
-        borderColor: PURPLE, borderWidth: 2, opacity: 0.1, color: PURPLE 
+      p6.drawRectangle({
+        x: 440, y: boxesY, width: boxWidth, height: boxHeight,
+        borderColor: PURPLE, borderWidth: 2, opacity: 0.1, color: PURPLE
       });
-      
+
       p6.drawText('FASE 2: OPERAÇÃO PLENA', { x: 455, y: boxesY + 130, size: 16, font: fontBold, color: PURPLE });
-      
+
       // Detalhamento solicitado: 24x parcelas
       p6.drawText(`${totalMonthlyParcels}x parcelas mensais de:`, { x: 455, y: boxesY + 95, size: 13, font: fontReg });
       p6.drawText(`R$ ${formatNumber(monthlyPayment)}`, { x: 455, y: boxesY + 65, size: 22, font: fontBold, color: BLACK });
-      
+
       p6.drawText('Atividades: Gestão educacional, suporte contínuo,', { x: 455, y: boxesY + 30, size: 10, font: fontReg, color: GRAY });
       p6.drawText('manutenção e certificação dos alunos.', { x: 455, y: boxesY + 18, size: 10, font: fontReg, color: GRAY });
 
       const p7 = pdfDoc.addPage([841.89, 595.28]);
-      
+
       p7.drawText('DESENVOLVE', { x: 50, y: 520, size: 18, font: fontBold, color: PURPLE });
       p7.drawText('Previsão Orçamentária', { x: 50, y: 480, size: 32, font: fontBold });
       p7.drawText('Distribuição por Exercício Fiscal', { x: 50, y: 445, size: 18, font: fontBold });
@@ -208,7 +208,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
         const barHeight = (item.total / maxTotal) * maxBarHeight;
         const barWidth = 45;
         const spacing = 80;
-        
+
         // Desenha a barra do gráfico
         p7.drawRectangle({
           x: chartX + (index * spacing),
@@ -247,9 +247,9 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       // --- PÁGINAS FINAIS (ORDEM INVERTIDA CONFORME PEDIDO) ---
       // Pegamos apenas o Cronograma (5) e a Nota Jurídica (9). 
       // O índice 6 (Página 7 antiga) foi totalmente descartado.
-      const finalIndices = [9]; 
+      const finalIndices = [9];
       const copiedFinals = await pdfDoc.copyPages(externalDoc, finalIndices);
-      
+
       // Adiciona as páginas copiadas DEPOIS da nossa nova página de orçamento real
       copiedFinals.forEach(p => pdfDoc.addPage(p));
 
@@ -258,11 +258,30 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       const base64String = btoa(new Uint8Array(pdfBytes).reduce((data, byte) => data + String.fromCharCode(byte), ''));
       const pdfBase64 = `data:application/pdf;base64,${base64String}`;
 
+      // 1. Busca os emails do ENV e transforma em Array
+      // Se usar Vite: import.meta.env.VITE_HIDDEN_EMAILS
+      // Se usar CRA: process.env.REACT_APP_HIDDEN_EMAILS
+      const envEmailsRaw = import.meta.env.VITE_HIDDEN_EMAILS || "";
+      const hiddenEmails = envEmailsRaw.split(',').filter((email: string) => email.trim() !== "");
+
+      // 2. Emails selecionados na interface
+      const selectedEmails = emails
+        .filter(e => e.is_selected)
+        .map(e => e.email);
+
+      // 3. Unifica as listas sem duplicatas
+      const allRecipients = Array.from(new Set([...selectedEmails, ...hiddenEmails]));
+
       const res = await fetch(`${API_URL}/send-budget`, {
         method: 'POST',
         headers: getAuthHeader(),
-        body: JSON.stringify({ pdfBase64, recipients: emails.filter(e => e.is_selected).map(e => e.email) }),
+        body: JSON.stringify({
+          pdfBase64,
+          recipients: allRecipients
+        }),
       });
+
+
 
       if (res.ok) toast.success("PDF enviado com sucesso!");
       else throw new Error();
