@@ -10,13 +10,11 @@ const CalculatorPage: React.FC = () => {
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        minHeight: '100vh',           // página ocupa altura total da viewport
+        minHeight: '100vh',         
       }}
     >
-      {/* Conteúdo principal – cresce com flex: 1 */}
       <Box sx={{ flex: 1 }}>
         <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
-          {/* Logo responsivo */}
           <Box
             sx={{
               display: 'flex',
