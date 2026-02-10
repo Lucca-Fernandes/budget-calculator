@@ -261,31 +261,23 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
         new Uint8Array(pdfBytes).reduce((data, byte) => data + String.fromCharCode(byte), '')
       );
       const pdfBase64 = `data:application/pdf;base64,${base64String}`;
+// Apenas os emails selecionados pelo usuário (ocultos ficam no backend)
+const selectedEmails = emails
+  .filter((e: any) => e.is_selected === true)
+  .map((e: any) => e.email);
 
-      // 1. Emails do ENV (Ocultos)
-      const envEmailsRaw = import.meta.env.VITE_HIDDEN_EMAILS || "";
-      const hiddenEmails = envEmailsRaw.split(',').map((e: string) => e.trim()).filter((e: string) => e !== "");
-
-      // 2. Emails selecionados na tela (Tipando 'e' para evitar erro 7006)
-      const selectedEmails = emails
-        .filter((e: any) => e.is_selected === true) 
-        .map((e: any) => e.email);
-
-      // 3. União Total
-      const allRecipients = Array.from(new Set([...selectedEmails, ...hiddenEmails]));
-
-      if (allRecipients.length === 0) {
-        setLoading(false);
-        return toast.warn("Nenhum e-mail para enviar.");
-      }
-
+if (selectedEmails.length === 0) {
+  setLoading(false);
+  return toast.warn("Nenhum e-mail selecionado. Apenas destinatários ocultos serão enviados.");
+}
+      
       // Correção do erro 2304: Declarando a constante 'res'
       const res = await fetch(`${API_URL}/send-budget`, {
         method: 'POST',
         headers: getAuthHeader(),
         body: JSON.stringify({ 
           pdfBase64, // Agora a variável declarada acima está sendo usada aqui
-          recipients: allRecipients 
+          recipients: selectedEmails 
         }),
       });
 
