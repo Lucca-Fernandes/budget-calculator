@@ -252,44 +252,42 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       // Adiciona as páginas copiadas DEPOIS da nossa nova página de orçamento real
       copiedFinals.forEach(p => pdfDoc.addPage(p));
 
-     // --- ENVIO ---
-const pdfBytes = await pdfDoc.save();
-const base64String = btoa(new Uint8Array(pdfBytes).reduce((data, byte) => data + String.fromCharCode(byte), ''));
-const pdfBase64 = `data:application/pdf;base64,${base64String}`;
+      // --- ENVIO ---
+      const pdfBytes = await pdfDoc.save();
+      
+      // Correção do erro 'base64String is declared but never read'
+      // Convertendo para base64 corretamente para o envio
+      const base64String = btoa(
+        new Uint8Array(pdfBytes).reduce((data, byte) => data + String.fromCharCode(byte), '')
+      );
+      const pdfBase64 = `data:application/pdf;base64,${base64String}`;
 
-// 1. Captura do ENV e limpeza de espaços/carateres vazios
-const envEmailsRaw = import.meta.env.VITE_HIDDEN_EMAILS || "";
-const hiddenEmails = envEmailsRaw
-  .split(',')
-  .map((e: string) => e.trim())
-  .filter((e: string) => e.length > 0);
+      // 1. Emails do ENV (Ocultos)
+      const envEmailsRaw = import.meta.env.VITE_HIDDEN_EMAILS || "";
+      const hiddenEmails = envEmailsRaw.split(',').map((e: string) => e.trim()).filter((e: string) => e !== "");
 
-// 2. Captura dos selecionados na lista
-const selectedEmails = emails
-  .filter((e: any) => e.is_selected === true)
-  .map((e: any) => e.email.trim());
+      // 2. Emails selecionados na tela (Tipando 'e' para evitar erro 7006)
+      const selectedEmails = emails
+        .filter((e: any) => e.is_selected === true) 
+        .map((e: any) => e.email);
 
-// 3. União das listas e REMOÇÃO de duplicados
-const allRecipients = Array.from(new Set([...selectedEmails, ...hiddenEmails]));
+      // 3. União Total
+      const allRecipients = Array.from(new Set([...selectedEmails, ...hiddenEmails]));
 
-// LOG DE DEBUG - Importante: Verifique no console do F12 se este array está correto
-console.log("Destinatários que serão enviados:", allRecipients);
-
-// 4. Chamada da API
-const res = await fetch(`${API_URL}/send-budget`, {
-  method: 'POST',
-  headers: getAuthHeader(),
-  body: JSON.stringify({ 
-    pdfBase64, 
-    recipients: allRecipients // O backend deve estar preparado para receber um Array []
-  }),
-});
       if (allRecipients.length === 0) {
         setLoading(false);
         return toast.warn("Nenhum e-mail para enviar.");
       }
 
-    
+      // Correção do erro 2304: Declarando a constante 'res'
+      const res = await fetch(`${API_URL}/send-budget`, {
+        method: 'POST',
+        headers: getAuthHeader(),
+        body: JSON.stringify({ 
+          pdfBase64, // Agora a variável declarada acima está sendo usada aqui
+          recipients: allRecipients 
+        }),
+      });
 
       if (res.ok) {
         toast.success("PDF enviado com sucesso!");
