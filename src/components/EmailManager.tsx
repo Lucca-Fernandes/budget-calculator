@@ -11,6 +11,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 const API_URL = 'https://budget-calculator-zntc.onrender.com';
+const FONT_FAMILY = 'Roboto, sans-serif';
 
 interface EmailManagerProps {
   calculatedStudents: number;
@@ -75,10 +76,8 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       const GRAY = rgb(0.4, 0.4, 0.4);
       const BLACK = rgb(0, 0, 0);
 
-      // --- PÁGINA 1: CAPA (LANDSCAPE) ---
       const p1 = pdfDoc.addPage([841.89, 595.28]);
 
-      // LOGICA DA LOGO: Desenha a logo no lugar do texto roxo "DESENVOLVE"
       p1.drawImage(logoDevImg, { x: 50, y: 480, width: 200, height: 40 });
 
       p1.drawText('SIMULAÇÃO DE VALORES E COTAÇÃO', { x: 50, y: 430, size: 36, font: fontBold });
@@ -298,20 +297,97 @@ if (selectedEmails.length === 0) {
   return (
     <Paper elevation={4} sx={{ mt: 4, p: 3, borderRadius: 2, borderTop: '5px solid #9100ff' }}>
       <ToastContainer position="top-right" />
-      <Dialog open={openCityPopup} onClose={() => !loading && setOpenCityPopup(false)} fullWidth maxWidth="xs">
-        <DialogTitle sx={{ fontFamily: 'Conthrax', color: '#9100ff' }}>Personalizar Proposta</DialogTitle>
-        <DialogContent>
-          <TextField autoFocus fullWidth variant="outlined" label="Cidade" value={cityName} onChange={(e) => setCityName(e.target.value)} disabled={loading} sx={{ mt: 1 }} />
+      <Dialog 
+        open={openCityPopup} 
+        onClose={() => !loading && setOpenCityPopup(false)} 
+        fullWidth 
+        maxWidth="xs"
+        PaperProps={{
+          sx: { borderRadius: 3, border: '2px solid #9100ff' } // opcional: estiliza borda do dialog
+        }}
+      >
+        <DialogTitle 
+          sx={{ 
+            fontFamily: FONT_FAMILY, 
+            color: '#9100ff', 
+            fontWeight: 'bold', 
+            fontSize: '1.5rem', 
+            textAlign: 'center',
+            pb: 1 
+          }}
+        >
+          Personalizar Proposta
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: 1 }}>
+          <TextField
+            autoFocus
+            fullWidth
+            variant="outlined"
+            label="Cidade"
+            value={cityName}
+            onChange={(e) => setCityName(e.target.value)}
+            disabled={loading}
+            sx={{ 
+              mt: 1,
+              '& .MuiInputLabel-root': { 
+                fontFamily: FONT_FAMILY,
+                color: '#9100ff',
+                fontWeight: 600
+              },
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': { borderColor: '#9100ff' },
+                '&:hover fieldset': { borderColor: '#7a00d6' },
+                '&.Mui-focused fieldset': { borderColor: '#9100ff' },
+                fontFamily: FONT_FAMILY,
+                fontSize: '1.1rem'
+              }
+            }}
+          />
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setOpenCityPopup(false)} color="inherit" disabled={loading}>Cancelar</Button>
-          <Button onClick={generateAndSendPDF} variant="contained" disabled={!cityName || loading} sx={{ bgcolor: '#9100ff' }}>
+
+        <DialogActions sx={{ p: 3, pt: 1, justifyContent: 'center', gap: 2 }}>
+          <Button 
+            onClick={() => setOpenCityPopup(false)} 
+            color="inherit" 
+            disabled={loading}
+            sx={{ 
+              fontFamily: FONT_FAMILY, 
+              fontWeight: 'bold',
+              color: 'text.secondary'
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            onClick={generateAndSendPDF} 
+            variant="contained" 
+            disabled={!cityName || loading} 
+            sx={{ 
+              bgcolor: '#9100ff', 
+              fontFamily: FONT_FAMILY, 
+              fontWeight: 'bold',
+              px: 4,
+              '&:hover': { bgcolor: '#7a00d6' }
+            }}
+          >
             {loading ? <CircularProgress size={24} color="inherit" /> : "Gerar e Enviar"}
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Typography variant="h6" sx={{ mb: 2, fontFamily: 'Conthrax', fontSize: '1.1rem' }}>Disparo de Proposta Institucional</Typography>
+      <Typography 
+        variant="h6" 
+        sx={{ 
+          mb: 2, 
+          fontFamily: FONT_FAMILY, 
+          fontSize: '1.4rem', 
+          color: '#9100ff', 
+          fontWeight: 'bold' 
+        }}
+      >
+        Disparo de Proposta Institucional
+      </Typography>
       <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
         <TextField fullWidth size="small" label="E-mail" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
         <Button variant="contained" onClick={async () => {

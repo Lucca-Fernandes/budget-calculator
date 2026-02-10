@@ -2,6 +2,7 @@ import React from 'react';
 import { Container, Box, Typography, Button, } from '@mui/material';
 import BudgetCalculator from '../components/BudgetCalculator';
 import logo from '../assets/logo.png';
+import Footer from '../components/Footer';
 
 const EmailTriggerPage: React.FC = () => {
 
@@ -11,7 +12,7 @@ const EmailTriggerPage: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 }, minHeight: '100vh' }}>
+    <><Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 }, minHeight: '100vh' }}>
       {/* Header com logo + botão sair */}
       <Box
         sx={{
@@ -29,8 +30,7 @@ const EmailTriggerPage: React.FC = () => {
           <img
             src={logo}
             alt="Logo Prodemge Desenvolve"
-            style={{ width: '100%', height: 'auto' }}
-          />
+            style={{ width: '100%', height: 'auto' }} />
         </Box>
 
         {/* Botão Sair */}
@@ -71,6 +71,8 @@ const EmailTriggerPage: React.FC = () => {
       {/* Calculadora */}
       <BudgetCalculator showEmailTrigger={true} />
     </Container>
+      <Footer />
+    </>
   );
 };
 
