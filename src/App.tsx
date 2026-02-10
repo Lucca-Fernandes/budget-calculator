@@ -1,12 +1,12 @@
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CalculatorPage from './pages/CalculatorPage';
-import CssBaseline from '@mui/material/CssBaseline'; // ← IMPORTANTE!
+import CssBaseline from '@mui/material/CssBaseline'; 
 import { Box } from '@mui/material';
 
 const appTheme = createTheme({
   palette: {
     primary: {
-      main: '#9100ff', // ajustei para combinar com sua cor principal
+      main: '#9100ff', 
     },
     background: {
       default: '#f5f5f5',
@@ -31,10 +31,8 @@ const appTheme = createTheme({
 function App() {
   return (
     <ThemeProvider theme={appTheme}>
-      {/* CssBaseline remove margens/paddings padrão do body/html */}
       <CssBaseline />
       
-      {/* Box root com altura total e flex */}
       <Box
         sx={{
           minHeight: '100vh',
