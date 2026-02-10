@@ -159,7 +159,7 @@ app.post('/send-budget', verifyJWT, async (req, res) => {
       `,
       attachments: [
         {
-          file_name: 'Proposta_Desenvolve.pdf',
+          filename: 'Proposta_Desenvolve.pdf', 
           file_blob: pdfContent,
           mime_type: 'application/pdf'
         }
