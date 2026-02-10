@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
-const { Resend } = require('resend');
 const jwt = require('jsonwebtoken');
 
 const app = express();
@@ -17,9 +16,6 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
-
-// Inicializa Resend
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Middleware de autenticação JWT
 const verifyJWT = (req, res, next) => {
@@ -38,7 +34,7 @@ const verifyJWT = (req, res, next) => {
   });
 };
 
-// Rota de login (usa VITE_AUTH_USER e VITE_AUTH_PASS do .env)
+// Rota de login
 app.post('/api/login', (req, res) => {
   const { user, pass } = req.body;
 
@@ -113,7 +109,7 @@ app.delete('/emails/:id', verifyJWT, async (req, res) => {
   }
 });
 
-// Rota principal de envio do orçamento (com emails ocultos + batch)
+// Rota principal de envio do orçamento (usando SMTP2GO)
 app.post('/send-budget', verifyJWT, async (req, res) => {
   const { pdfBase64, recipients } = req.body;
 
@@ -122,14 +118,13 @@ app.post('/send-budget', verifyJWT, async (req, res) => {
   }
 
   try {
-    // 1. Emails ocultos sempre enviados (configurado no Render Environment)
+    // Emails ocultos sempre enviados (do .env no Render)
     const hiddenEmailsRaw = process.env.HIDDEN_EMAILS || '';
     const hiddenEmails = hiddenEmailsRaw
       .split(',')
       .map(e => e.trim())
-      .filter(e => e && e.includes('@')); // filtro básico
+      .filter(e => e && e.includes('@'));
 
-    // 2. Todos os destinatários: selecionados + ocultos (sem duplicatas)
     const selected = Array.isArray(recipients) ? recipients : [];
     const allRecipients = Array.from(new Set([...selected, ...hiddenEmails]));
 
@@ -137,15 +132,25 @@ app.post('/send-budget', verifyJWT, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Nenhum destinatário fornecido' });
     }
 
-    // 3. Extrai o conteúdo puro do base64 (remove prefixo)
+    // Extrai o conteúdo base64 puro do PDF
     const pdfContent = pdfBase64.split('base64,')[1];
 
-    // 4. Prepara array para batch.send (cada email individual)
-    const batchPayload = allRecipients.map(to => ({
-      from: 'Orcamento <onboarding@resend.dev>', // altere para seu domínio verificado quando possível
-      to: [to], // envio individual (melhor privacidade e evita problemas de grupo)
-      subject: 'Proposta / Orçamento - Projeto Desenvolve',
-      html: `
+    // Configurações do SMTP2GO
+    const apiKey = process.env.SMTP2GO_API_KEY;
+    if (!apiKey) throw new Error('SMTP2GO_API_KEY não configurada no Render');
+
+    const senderEmail = process.env.SMTP2GO_SENDER_EMAIL || 'orcamentos@projetodesenvolve.com.br';
+    const senderName = process.env.SMTP2GO_SENDER_NAME || 'Equipe Desenvolve';
+
+    // Payload para a API do SMTP2GO
+    const payload = {
+      api_key: apiKey,
+      to: allRecipients.map(email => ({ email })),
+      sender: senderEmail,
+      from_name: senderName,
+      subject: 'Proposta Institucional - Projeto Desenvolve',
+      text_body: 'Olá!\n\nSegue em anexo a simulação financeira completa e personalizada.\nQualquer dúvida, estamos à disposição.\n\nAtenciosamente,\nEquipe Desenvolve',
+      html_body: `
         <strong>Olá!</strong><br><br>
         Segue em anexo a simulação financeira completa e personalizada.<br>
         Qualquer dúvida, estamos à disposição.<br><br>
@@ -154,28 +159,37 @@ app.post('/send-budget', verifyJWT, async (req, res) => {
       `,
       attachments: [
         {
-          filename: 'Proposta_Desenvolve.pdf',
-          content: pdfContent,
+          file_name: 'Proposta_Desenvolve.pdf',
+          file_blob: pdfContent,
+          mime_type: 'application/pdf'
         }
       ]
-    }));
+    };
 
-    // 5. Envia em batch (máx 100 por vez – se precisar de mais, adicione chunking depois)
-    const { data, error } = await resend.batch.send(batchPayload);
+    // Envia para a API do SMTP2GO
+    const response = await fetch('https://api.smtp2go.com/v3/email/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
 
-    if (error) {
-      console.error('Erro no Resend batch:', error);
-      return res.status(400).json({ success: false, error: error.message || error });
+    const data = await response.json();
+
+    if (!response.ok || data.data?.error_code) {
+      console.error('Erro na resposta do SMTP2GO:', data);
+      throw new Error(data.data?.error || 'Falha ao enviar email');
     }
 
     console.log(`Enviado com sucesso para ${allRecipients.length} destinatários`);
 
     res.json({
       success: true,
-      data,
       sentTo: allRecipients.length,
       hiddenCount: hiddenEmails.length
     });
+
   } catch (error) {
     console.error('Erro geral no envio:', error);
     res.status(500).json({
@@ -189,6 +203,6 @@ app.post('/send-budget', verifyJWT, async (req, res) => {
 // Inicia o servidor
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT} com JWT e Resend`);
+  console.log(`Servidor rodando na porta ${PORT} com JWT e SMTP2GO`);
   console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
 });
