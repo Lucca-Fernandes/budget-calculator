@@ -35,7 +35,6 @@ const CalculatorPage: React.FC = () => {
             />
           </Box>
 
-          {/* Título */}
           <Typography
             variant="h1"
             align="center"
@@ -48,12 +47,9 @@ const CalculatorPage: React.FC = () => {
             Calculadora de Orçamento
           </Typography>
 
-          {/* Calculadora */}
           <BudgetCalculator />
         </Container>
       </Box>
-
-      {/* Footer sempre no final da página */}
       <Footer />
     </Box>
   );
