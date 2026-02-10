@@ -24,7 +24,7 @@ interface EmailManagerProps {
 }
 
 export const EmailManager: React.FC<EmailManagerProps> = ({
-  calculatedStudents, totalCost, formatNumber, totalMonthlyParcels, entryFee, monthlyPayment
+  calculatedStudents, totalCost, formatNumber, yearlyPayments, totalMonthlyParcels
 }) => {
   const [emails, setEmails] = useState<any[]>([]);
   const [newEmail, setNewEmail] = useState('');
@@ -60,10 +60,14 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
     try {
       const url = '/template.pdf';
       const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
+
+      // LOGICA DA LOGO: Carrega a imagem da pasta public
       const logoDevBytes = await fetch('/logo-desenvolve.png').then(res => res.arrayBuffer());
 
       const externalDoc = await PDFDocument.load(existingPdfBytes);
       const pdfDoc = await PDFDocument.create();
+
+      // LOGICA DA LOGO: Transforma em imagem do PDF
       const logoDevImg = await pdfDoc.embedPng(logoDevBytes);
 
       const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -72,72 +76,124 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       const GRAY = rgb(0.4, 0.4, 0.4);
       const BLACK = rgb(0, 0, 0);
 
-      // --- PÁGINA 1: CAPA (Criada do zero) ---
+      // --- PÁGINA 1: CAPA (LANDSCAPE) ---
       const p1 = pdfDoc.addPage([841.89, 595.28]);
+
+      // LOGICA DA LOGO: Desenha a logo no lugar do texto roxo "DESENVOLVE"
       p1.drawImage(logoDevImg, { x: 50, y: 480, width: 200, height: 40 });
+
       p1.drawText('SIMULAÇÃO DE VALORES E COTAÇÃO', { x: 50, y: 430, size: 36, font: fontBold });
       p1.drawText('INICIAL', { x: 50, y: 395, size: 36, font: fontBold });
       p1.drawText('PROJETO DESENVOLVE – PRODEMGE', { x: 50, y: 310, size: 20, font: fontBold });
       p1.drawText(`UNIDADE: ${cityName.toUpperCase()}`, { x: 50, y: 270, size: 16, font: fontBold, color: PURPLE });
       p1.drawText('Programa de Desenvolvimento Econômico e Transformação Social', { x: 50, y: 245, size: 12, font: fontReg, color: BLACK });
 
-      // --- PÁGINA 2: INSTITUCIONAL (Copiada do template original) ---
+      // --- PÁGINA 2: INSTITUCIONAL (COPIADA) ---
       const [page2] = await pdfDoc.copyPages(externalDoc, [1]);
       pdfDoc.addPage(page2);
 
-      // --- PÁGINA 3: DIMENSIONAMENTO (Criada do zero) ---
+      // --- PÁGINA 3: DIMENSIONAMENTO (LANDSCAPE - SEM QUADRO, SEM CICLOS) ---
       const p3 = pdfDoc.addPage([841.89, 595.28]);
       p3.drawText('Dimensionamento', { x: 50, y: 510, size: 18, font: fontBold, color: PURPLE });
       p3.drawText('Trajetórias de Transformação', { x: 50, y: 460, size: 32, font: fontBold });
-      p3.drawText(`A implementação em ${cityName} está desenhada para um impacto de larga escala...`, { x: 50, y: 430, size: 14, font: fontReg, maxWidth: 700 });
+
+      const desc3 = `A implementação em ${cityName} está desenhada para um impacto de larga escala, estruturada para atender ao volume de demanda do município de forma organizada e sustentável.`;
+      p3.drawText(desc3, { x: 50, y: 430, size: 14, font: fontReg, maxWidth: 700 });
+
       p3.drawText('Público Beneficiário', { x: 50, y: 360, size: 18, font: fontBold });
       p3.drawText(`Total de Cidadãos: ${calculatedStudents.toLocaleString('pt-BR')}`, { x: 50, y: 330, size: 22, font: fontBold, color: PURPLE });
-      p3.drawText('Responsabilidade Municipal', { x: 50, y: 260, size: 18, font: fontBold });
-      p3.drawText(`Fornecimento de espaço físico adequado...`, { x: 50, y: 235, size: 14, font: fontReg, maxWidth: 650, lineHeight: 18 });
 
-      // --- PÁGINA 4: INSTITUCIONAL (Copiada do template original) ---
+      p3.drawText('Responsabilidade Municipal', { x: 50, y: 260, size: 18, font: fontBold });
+      const respText = `Fornecimento de espaço físico adequado para credenciamento e funcionamento da "Unidade Polo" da Escola Desenvolve, servindo como centro de referência e apoio aos alunos.`;
+      p3.drawText(respText, { x: 50, y: 235, size: 14, font: fontReg, maxWidth: 650, lineHeight: 18 });
+
+      // --- PÁGINA 4: INSTITUCIONAL (COPIADA) ---
       const [page4] = await pdfDoc.copyPages(externalDoc, [3]);
       pdfDoc.addPage(page4);
 
-      // --- PÁGINA 5: ENGENHARIA FINANCEIRA (Criada do zero) ---
       const p5 = pdfDoc.addPage([841.89, 595.28]);
       const unitCost = totalCost / calculatedStudents;
       const globalValue = totalCost >= 1000000 ? `${(totalCost / 1000000).toFixed(2)}M` : formatNumber(totalCost);
+
       p5.drawText('Engenharia Financeira', { x: 50, y: 510, size: 18, font: fontBold, color: PURPLE });
       p5.drawText('Estrutura de Investimento Social', { x: 50, y: 460, size: 32, font: fontBold });
-      p5.drawText('A engenharia financeira prevê o escalonamento das fases para otimização orçamentária.', { x: 50, y: 420, size: 18, font: fontReg, color: BLACK });
-      
+
+      // NOVO TEXTO ADICIONADO ABAIXO DO TÍTULO
+      p5.drawText('A engenharia financeira prevê o escalonamento das fases para otimização orçamentária.', {
+        x: 50,
+        y: 420,
+        size: 18,
+        font: fontReg,
+        color: BLACK
+      });
+
+      // Layout de Colunas (Ajustado levemente o Y para não sobrepor o novo texto)
       const drawCol = (val: string, label: string, sub: string, x: number) => {
         p5.drawText(val, { x, y: 340, size: 40, font: fontBold, color: PURPLE });
         p5.drawText(label, { x, y: 300, size: 16, font: fontBold });
         p5.drawText(sub, { x, y: 280, size: 11, font: fontReg, color: GRAY });
       };
+
       drawCol(`R$ ${formatNumber(unitCost)}`, 'Investimento Unitário', 'Por cidadão beneficiado', 50);
       drawCol(`${calculatedStudents.toLocaleString('pt-BR')}`, 'Total de Cidadãos', 'Cidadãos Beneficiados', 340);
       drawCol(`R$ ${globalValue}`, 'Investimento Global', 'Valor total do projeto', 600);
 
-      // --- PÁGINA 6: PREVISÃO ORÇAMENTÁRIA (Gráfico Real) ---
-      const p6 = pdfDoc.addPage([841.89, 595.28]);
-      p6.drawText('Previsão Orçamentária', { x: 50, y: 480, size: 32, font: fontBold });
-      // ... (coloque aqui o código do loop yearlyPayments.forEach que desenha as barras e os anos)
-
-      // --- PÁGINA 7: CRONOGRAMA (PENÚLTIMA TELA - OS DOIS QUADROS REAIS) ---
+      // --- PÁGINA 7: PREVISÃO ORÇAMENTÁRIA (DADOS REAIS + GRÁFICO) ---
       const p7 = pdfDoc.addPage([841.89, 595.28]);
-      p7.drawText('Cronograma de Desembolso', { x: 50, y: 480, size: 32, font: fontBold });
-      
-      // QUADRO FASE 1
-      p7.drawRectangle({ x: 50, y: 250, width: 350, height: 150, borderColor: PURPLE, borderWidth: 2, opacity: 0.1, color: PURPLE });
-      p7.drawText('FASE 1: IMPLEMENTAÇÃO', { x: 65, y: 375, size: 14, font: fontBold, color: PURPLE });
-      p7.drawText(`Investimento: 2x parcelas de R$ ${formatNumber(entryFee)}`, { x: 65, y: 325, size: 12, font: fontReg });
 
-      // QUADRO FASE 2
-      p7.drawRectangle({ x: 440, y: 250, width: 350, height: 150, borderColor: PURPLE, borderWidth: 2, opacity: 0.1, color: PURPLE });
-      p7.drawText('FASE 2: OPERAÇÃO PLENA', { x: 455, y: 375, size: 14, font: fontBold, color: PURPLE });
-      p7.drawText(`Investimento: ${totalMonthlyParcels}x parcelas de R$ ${formatNumber(monthlyPayment)}`, { x: 455, y: 325, size: 12, font: fontReg });
+      p7.drawText('DESENVOLVE', { x: 50, y: 520, size: 18, font: fontBold, color: PURPLE });
+      p7.drawText('Previsão Orçamentária', { x: 50, y: 480, size: 32, font: fontBold });
+      p7.drawText('Distribuição por Exercício Fiscal', { x: 50, y: 445, size: 18, font: fontBold });
 
-      // --- PÁGINA 8: NOTA JURÍDICA (ÚLTIMA PÁGINA - Copiada do template original) ---
-      const [lastPage] = await pdfDoc.copyPages(externalDoc, [8]); // O índice 8 costuma ser a última página em um PDF de 9
-      pdfDoc.addPage(lastPage);
+      // --- LÓGICA DO GRÁFICO ---
+      const chartX = 450;
+      const chartY = 150;
+      const maxBarHeight = 200;
+      // Encontra o maior valor para escalar as barras
+      const maxTotal = Math.max(...yearlyPayments.map(i => i.total));
+
+      yearlyPayments.forEach((item, index) => {
+        const barHeight = (item.total / maxTotal) * maxBarHeight;
+        const barWidth = 40;
+        const spacing = 70;
+
+        // Desenha a barra
+        p7.drawRectangle({
+          x: chartX + (index * spacing),
+          y: chartY,
+          width: barWidth,
+          height: barHeight,
+          color: PURPLE,
+        });
+
+        // Texto do Ano abaixo da barra
+        p7.drawText(item.year.toString(), {
+          x: chartX + (index * spacing),
+          y: chartY - 20,
+          size: 12,
+          font: fontBold,
+        });
+
+        // Valor real ao lado (Listagem)
+        p7.drawText(`• Ano ${item.year}: R$ ${formatNumber(item.total)}`, {
+          x: 70,
+          y: 350 - (index * 30),
+          size: 16,
+          font: fontBold,
+          color: rgb(0, 0, 0)
+        });
+      });
+
+      const totalExecucao = `Total de ${totalMonthlyParcels + 2} meses de execução, com valores reais de desembolso.`;
+      p7.drawText(totalExecucao, { x: 50, y: 100, size: 12, font: fontReg, color: GRAY });
+
+      // --- PÁGINAS FINAIS (CORRIGIDO PARA REMOVER A PÁGINA 7 ANTIGA) ---
+      // Mudamos de [5, 6, 9] para [5, 9] (índice 5 é cronograma, 9 é nota jurídica)
+      // O índice 6 era a página 7 antiga que foi removida.
+      const finalIndices = [5, 9];
+      const copiedFinals = await pdfDoc.copyPages(externalDoc, finalIndices);
+      copiedFinals.forEach(p => pdfDoc.addPage(p));
+
       // --- ENVIO ---
       const pdfBytes = await pdfDoc.save();
       const base64String = btoa(new Uint8Array(pdfBytes).reduce((data, byte) => data + String.fromCharCode(byte), ''));
