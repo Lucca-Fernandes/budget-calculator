@@ -24,7 +24,7 @@ export const BudgetForm: React.FC<Props> = ({
       inputProps={{ sx: { fontSize: '1.4rem', fontFamily, m: 0.5 } }}
       fullWidth
     />
-    <Box sx={{ display: 'flex', gap: 2, alignItems: 'stretch' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 }, mt: { xs: 2, md: 4 }, mb: { xs: 2, md: 4 } }}>
       <TextField
         label="Quantidade de Alunos"
         type="text"

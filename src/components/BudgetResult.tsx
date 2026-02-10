@@ -21,15 +21,14 @@ export const BudgetResult: React.FC<Props> = ({
   calculatedStudents, entryFee, deliveryFee, monthlyPayment, totalMonthlyParcels, yearlyPayments, totalCost, formatNumber, fontFamily, primaryColor
 }) => {
   if (calculatedStudents <= 0) {
-    return (
-      <Box sx={{ textAlign: 'center', py: 4, opacity: 0.6 }}>
-        <Typography variant="h5" sx={{ fontFamily }}>
-          Digite a quantidade de alunos e clique em Calcular.
-        </Typography>
-      </Box>
-    );
-  }
-
+  return (
+    <Box sx={{ textAlign: 'center', py: { xs: 2, md: 4 }, opacity: 0.6 }}>
+      <Typography variant="h5" sx={{ fontFamily }}>
+        Digite a quantidade de alunos e clique em Calcular.
+      </Typography>
+    </Box>
+  );
+}
   return (
     <>
       <Typography variant="body1" sx={{ fontSize: '1.4rem', mb: 1, fontFamily }}>
