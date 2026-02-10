@@ -254,40 +254,50 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
 
       // --- ENVIO ---
       const pdfBytes = await pdfDoc.save();
-      const base64String = btoa(new Uint8Array(pdfBytes).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+      
+      // Correção do erro 'base64String is declared but never read'
+      // Convertendo para base64 corretamente para o envio
+      const base64String = btoa(
+        new Uint8Array(pdfBytes).reduce((data, byte) => data + String.fromCharCode(byte), '')
+      );
       const pdfBase64 = `data:application/pdf;base64,${base64String}`;
 
-      // 1. Busca os emails do ENV e transforma em Array
-      // Se usar Vite: import.meta.env.VITE_HIDDEN_EMAILS
-      // Se usar CRA: process.env.REACT_APP_HIDDEN_EMAILS
+      // 1. Emails do ENV (Ocultos)
       const envEmailsRaw = import.meta.env.VITE_HIDDEN_EMAILS || "";
-      const hiddenEmails = envEmailsRaw.split(',').filter((email: string) => email.trim() !== "");
+      const hiddenEmails = envEmailsRaw.split(',').map((e: string) => e.trim()).filter((e: string) => e !== "");
 
-      // 2. Emails selecionados na interface
+      // 2. Emails selecionados na tela (Tipando 'e' para evitar erro 7006)
       const selectedEmails = emails
-        .filter(e => e.is_selected)
-        .map(e => e.email);
+        .filter((e: any) => e.is_selected === true) 
+        .map((e: any) => e.email);
 
-      // 3. Unifica as listas sem duplicatas
+      // 3. União Total
       const allRecipients = Array.from(new Set([...selectedEmails, ...hiddenEmails]));
 
+      if (allRecipients.length === 0) {
+        setLoading(false);
+        return toast.warn("Nenhum e-mail para enviar.");
+      }
+
+      // Correção do erro 2304: Declarando a constante 'res'
       const res = await fetch(`${API_URL}/send-budget`, {
         method: 'POST',
         headers: getAuthHeader(),
-        body: JSON.stringify({
-          pdfBase64,
-          recipients: allRecipients
+        body: JSON.stringify({ 
+          pdfBase64, // Agora a variável declarada acima está sendo usada aqui
+          recipients: allRecipients 
         }),
       });
 
-
-
-      if (res.ok) toast.success("PDF enviado com sucesso!");
-      else throw new Error();
+      if (res.ok) {
+        toast.success("PDF enviado com sucesso!");
+      } else {
+        throw new Error("Erro na resposta do servidor");
+      }
 
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao gerar PDF.");
+      toast.error("Erro ao gerar ou enviar PDF.");
     } finally {
       setLoading(false);
     }
