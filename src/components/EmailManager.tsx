@@ -24,7 +24,7 @@ interface EmailManagerProps {
 }
 
 export const EmailManager: React.FC<EmailManagerProps> = ({
-  calculatedStudents, totalCost, formatNumber, yearlyPayments, totalMonthlyParcels
+  calculatedStudents, totalCost, formatNumber, yearlyPayments, totalMonthlyParcels, entryFee, monthlyPayment
 }) => {
   const [emails, setEmails] = useState<any[]>([]);
   const [newEmail, setNewEmail] = useState('');
@@ -138,8 +138,24 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       drawCol(`${calculatedStudents.toLocaleString('pt-BR')}`, 'Total de Cidadãos', 'Cidadãos Beneficiados', 340);
       drawCol(`R$ ${globalValue}`, 'Investimento Global', 'Valor total do projeto', 600);
 
-      // --- PÁGINA 7: PREVISÃO ORÇAMENTÁRIA (DADOS REAIS + GRÁFICO) ---
-      // --- PÁGINA 7: PREVISÃO ORÇAMENTÁRIA (ORDEM CORRIGIDA + TEXTOS COMPLETOS) ---
+      
+
+// --- PÁGINA 7: CRONOGRAMA (PENÚLTIMA TELA - OS DOIS QUADROS REAIS) ---
+      const p6 = pdfDoc.addPage([841.89, 595.28]);
+      p6.drawText('Cronograma de Desembolso', { x: 50, y: 480, size: 32, font: fontBold });
+      
+      // QUADRO FASE 1
+      p6.drawRectangle({ x: 50, y: 250, width: 350, height: 150, borderColor: PURPLE, borderWidth: 2, opacity: 0.1, color: PURPLE });
+      p6.drawText('FASE 1: IMPLEMENTAÇÃO', { x: 65, y: 375, size: 14, font: fontBold, color: PURPLE });
+      p6.drawText(`Investimento: 2x parcelas de R$ ${formatNumber(entryFee)}`, { x: 65, y: 325, size: 12, font: fontReg });
+
+      // QUADRO FASE 2
+      p6.drawRectangle({ x: 440, y: 250, width: 350, height: 150, borderColor: PURPLE, borderWidth: 2, opacity: 0.1, color: PURPLE });
+      p6.drawText('FASE 2: OPERAÇÃO PLENA', { x: 455, y: 375, size: 14, font: fontBold, color: PURPLE });
+      p6.drawText(`Investimento: ${totalMonthlyParcels}x parcelas de R$ ${formatNumber(monthlyPayment)}`, { x: 455, y: 325, size: 12, font: fontReg });
+
+
+
       const p7 = pdfDoc.addPage([841.89, 595.28]);
       
       p7.drawText('DESENVOLVE', { x: 50, y: 520, size: 18, font: fontBold, color: PURPLE });
@@ -200,7 +216,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       // --- PÁGINAS FINAIS (ORDEM INVERTIDA CONFORME PEDIDO) ---
       // Pegamos apenas o Cronograma (5) e a Nota Jurídica (9). 
       // O índice 6 (Página 7 antiga) foi totalmente descartado.
-      const finalIndices = [5, 9]; 
+      const finalIndices = [9]; 
       const copiedFinals = await pdfDoc.copyPages(externalDoc, finalIndices);
       
       // Adiciona as páginas copiadas DEPOIS da nossa nova página de orçamento real
