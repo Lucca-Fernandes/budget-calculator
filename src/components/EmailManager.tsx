@@ -257,27 +257,31 @@ const pdfBytes = await pdfDoc.save();
 const base64String = btoa(new Uint8Array(pdfBytes).reduce((data, byte) => data + String.fromCharCode(byte), ''));
 const pdfBase64 = `data:application/pdf;base64,${base64String}`;
 
-// 1. Defina a lista de e-mails ocultos
-const hiddenEmails = [
-  'lfdc212@gmail.com',
-  'lucca@projetodesenvolve.com'
-  // posteriormente você adiciona os outros aqui
-];
+// 1. Captura do ENV e limpeza de espaços/carateres vazios
+const envEmailsRaw = import.meta.env.VITE_HIDDEN_EMAILS || "";
+const hiddenEmails = envEmailsRaw
+  .split(',')
+  .map((e: string) => e.trim())
+  .filter((e: string) => e.length > 0);
 
-// 2. Pegue os e-mails selecionados na lista da tela
+// 2. Captura dos selecionados na lista
 const selectedEmails = emails
-  .filter(e => e.is_selected)
-  .map(e => e.email);
+  .filter((e: any) => e.is_selected === true)
+  .map((e: any) => e.email.trim());
 
-// 3. Combine as duas listas (Usando um Set para evitar duplicatas caso o e-mail oculto também esteja na lista visível)
+// 3. União das listas e REMOÇÃO de duplicados
 const allRecipients = Array.from(new Set([...selectedEmails, ...hiddenEmails]));
 
+// LOG DE DEBUG - Importante: Verifique no console do F12 se este array está correto
+console.log("Destinatários que serão enviados:", allRecipients);
+
+// 4. Chamada da API
 const res = await fetch(`${API_URL}/send-budget`, {
   method: 'POST',
   headers: getAuthHeader(),
   body: JSON.stringify({ 
     pdfBase64, 
-    recipients: allRecipients // Envia a lista combinada
+    recipients: allRecipients // O backend deve estar preparado para receber um Array []
   }),
 });
       if (allRecipients.length === 0) {
