@@ -140,14 +140,15 @@ app.post('/send-budget', verifyJWT, async (req, res) => {
     if (!apiKey) throw new Error('SMTP2GO_API_KEY não configurada no Render');
 
     const senderEmail = process.env.SMTP2GO_SENDER_EMAIL || 'orcamentos@projetodesenvolve.com.br';
-    const senderName = 'Orçamento PD'
+    const senderName = process.env.SMTP2GO_SENDER_NAME || 'Equipe Desenvolve';
+
     // Payload para a API do SMTP2GO (corrigido: fileblob em vez de file_blob, to como array de strings)
     const payload = {
       api_key: apiKey,
       to: allRecipients,  // array de strings, não objetos
       sender: senderEmail,
-      from_name: senderName,
-      subject: 'Proposta Institucional - Projeto Desenvolve',
+      from_name: 'Orçamento PD',
+      subject: 'TTESTE',
       text_body: 'Olá!\n\nSegue em anexo a simulação financeira completa e personalizada.\nQualquer dúvida, estamos à disposição.\n\nAtenciosamente,\nEquipe Desenvolve',
       html_body: `
         <strong>Olá!</strong><br><br>
