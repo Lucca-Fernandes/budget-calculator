@@ -148,7 +148,7 @@ app.post('/send-budget', verifyJWT, async (req, res) => {
       to: allRecipients,  // array de strings, não objetos
       sender: senderEmail,
       from_name: 'Orçamento PD',
-      subject: 'Proposta Institucional - Projeto Desenvolve',
+      subject: 'Projeto Desenvolve',
       text_body: 'Olá!\n\nSegue em anexo a simulação financeira completa e personalizada.\nQualquer dúvida, estamos à disposição.\n\nAtenciosamente,\nEquipe Desenvolve',
       html_body: `
         <strong>Olá!</strong><br><br>
